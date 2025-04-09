@@ -68,24 +68,49 @@
             0% { background-position: 200% 0; } 
             100% { background-position: -200% 0; }
         }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes slideDownFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body class="h-full bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
     <div class="min-h-full">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- Header -->
-            <div class="flex justify-between items-center mb-8">
+            <div class="flex justify-between items-center mb-8" style="animation: fadeInUp 0.5s ease-out forwards;">
                 <h1 class="text-2xl font-bold uppercase text-gray-900 dark:text-white" id="page-title">
                     Route 7: Next Buses (PZV2 → HQ)
                 </h1>
-                <button id="darkModeToggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                    <i class="fas fa-moon dark:hidden"></i>
-                    <i class="fas fa-sun hidden dark:block"></i>
-                </button>
+                <div class="flex items-center space-x-2"> <!-- Wrapper for header buttons -->
+                    <button id="open-search-button" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button id="darkModeToggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:block"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Current Time -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6" style="animation: fadeInUp 0.5s 0.1s ease-out forwards; opacity: 0;">
                 <div class="text-center">
                     <div class="text-sm uppercase text-gray-500 dark:text-gray-400">Current Time (Dubai)</div>
                     <div id="current-time" class="text-2xl font-semibold text-gray-900 dark:text-white"></div>
@@ -93,7 +118,7 @@
             </div>
 
             <!-- Direction Controls -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6" style="animation: fadeInUp 0.5s 0.2s ease-out forwards; opacity: 0;">
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div class="flex w-full sm:w-auto">
                         <div class="flex rounded-md shadow-sm w-full sm:w-auto" role="group">
@@ -118,16 +143,45 @@
             </div>
 
             <!-- Next Buses -->
-            <div id="next-buses" class="space-y-4 mb-6">
-                <!-- Bus entries will be inserted here -->
+            <div style="animation: fadeInUp 0.5s 0.3s ease-out forwards; opacity: 0;"> <!-- Wrapper for animation -->
+                <h2 class="text-lg uppercase font-semibold text-gray-900 dark:text-white mb-4">Next Departures</h2>
+                <div id="next-buses" class="space-y-4 mb-6">
+                    <!-- Bus entries will be inserted here -->
+                </div>
             </div>
 
             <!-- Full Schedule -->
-            <div id="full-schedule" class="hidden">
+            <div id="full-schedule" class="opacity-0 transition-all duration-500 ease-in-out max-h-0 overflow-hidden"> <!-- Removed 'hidden' class -->
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Full Schedule</h2>
                     <div id="schedule-list" class="space-y-2">
                         <!-- Schedule entries will be inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Overlay (New) -->
+            <div id="search-overlay" 
+                 class="hidden fixed inset-0 bg-gray-100/80 dark:bg-gray-900/80 backdrop-blur-sm z-50 p-4 sm:p-6 lg:p-8 transition-opacity duration-300 ease-in-out" 
+                 style="animation: slideDownFadeIn 0.3s ease-out forwards;">
+                <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-xl mx-auto p-6 mt-10">
+                    <button id="close-search-button" class="absolute top-4 right-4 p-1 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
+                        <i class="fas fa-times fa-lg"></i>
+                    </button>
+                    <h2 class="text-lg uppercase font-semibold text-gray-900 dark:text-white mb-4">Find Bus Before Arrival Time</h2>
+                    <div class="flex flex-col sm:flex-row items-end gap-4">
+                        <div class="flex-grow w-full">
+                            <label for="arrival-time-search" class="block text-sm font-medium uppercase text-gray-700 dark:text-gray-300 mb-1">Desired Arrival Time:</label>
+                            <input type="time" id="arrival-time-search" name="arrival-time-search"
+                                   class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:text-white p-2">
+                        </div>
+                        <button id="search-button"
+                                class="inline-flex uppercase items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors w-full sm:w-auto">
+                            <i class="fas fa-search mr-2"></i> Search
+                        </button>
+                    </div>
+                    <div id="search-results" class="mt-4 space-y-3">
+                        <!-- Search results will appear here -->
                     </div>
                 </div>
             </div>
@@ -148,110 +202,43 @@
             localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
         });
 
-        // Schedule data
-        const pzv2_to_hq = [
-            { departPZV2: "00:00", arriveHQ: "00:30" },
-            { departPZV2: "00:30", arriveHQ: "01:00" },
-            { departPZV2: "01:00", arriveHQ: "01:30" },
-            { departPZV2: "01:30", arriveHQ: "02:00" },
-            { departPZV2: "02:00", arriveHQ: "02:30" },
-            { departPZV2: "02:30", arriveHQ: "03:00" },
-            { departPZV2: "03:00", arriveHQ: "03:30" },
-            { departPZV2: "03:30", arriveHQ: "04:00" },
-            { departPZV2: "04:00", arriveHQ: "04:30" },
-            { departPZV2: "04:30", arriveHQ: "05:00" },
-            { departPZV2: "05:00", arriveHQ: "05:30" },
-            { departPZV2: "05:30", arriveHQ: "06:00" },
-            { departPZV2: "06:00", arriveHQ: "06:30" },
-            { departPZV2: "06:30", arriveHQ: "07:00" },
-            { departPZV2: "07:00", arriveHQ: "07:30" },
-            { departPZV2: "07:30", arriveHQ: "08:00" },
-            { departPZV2: "08:00", arriveHQ: "08:30" },
-            { departPZV2: "08:30", arriveHQ: "09:00" },
-            { departPZV2: "09:00", arriveHQ: "09:30" },
-            { departPZV2: "09:30", arriveHQ: "10:00" },
-            { departPZV2: "10:00", arriveHQ: "10:30" },
-            { departPZV2: "10:30", arriveHQ: "11:00" },
-            { departPZV2: "11:00", arriveHQ: "11:30" },
-            { departPZV2: "11:30", arriveHQ: "12:00" },
-            { departPZV2: "12:00", arriveHQ: "12:30" },
-            { departPZV2: "12:30", arriveHQ: "13:00" },
-            { departPZV2: "13:00", arriveHQ: "13:30" },
-            { departPZV2: "13:30", arriveHQ: "14:00" },
-            { departPZV2: "14:00", arriveHQ: "14:30" },
-            { departPZV2: "14:30", arriveHQ: "15:00" },
-            { departPZV2: "15:00", arriveHQ: "15:30" },
-            { departPZV2: "15:30", arriveHQ: "16:00" },
-            { departPZV2: "16:00", arriveHQ: "16:30" },
-            { departPZV2: "16:30", arriveHQ: "17:00" },
-            { departPZV2: "17:00", arriveHQ: "17:30" },
-            { departPZV2: "17:30", arriveHQ: "18:00" },
-            { departPZV2: "18:00", arriveHQ: "18:30" },
-            { departPZV2: "18:30", arriveHQ: "19:00" },
-            { departPZV2: "19:00", arriveHQ: "19:30" },
-            { departPZV2: "19:30", arriveHQ: "20:00" },
-            { departPZV2: "20:00", arriveHQ: "20:30" },
-            { departPZV2: "20:30", arriveHQ: "21:00" },
-            { departPZV2: "21:00", arriveHQ: "21:30" },
-            { departPZV2: "21:30", arriveHQ: "22:00" },
-            { departPZV2: "22:00", arriveHQ: "22:30" },
-            { departPZV2: "22:30", arriveHQ: "23:00" },
-            { departPZV2: "23:00", arriveHQ: "23:30" },
-            { departPZV2: "23:30", arriveHQ: "00:00" }
-        ];
+        // Search Bar Toggle Logic
+        const openSearchButton = document.getElementById('open-search-button');
+        const closeSearchButton = document.getElementById('close-search-button');
+        const searchOverlay = document.getElementById('search-overlay');
 
-        const hq_to_pzv2 = [
-            { departHQ: "00:15", arrivePZV2: "00:45" },
-            { departHQ: "00:45", arrivePZV2: "01:15" },
-            { departHQ: "01:15", arrivePZV2: "01:45" },
-            { departHQ: "01:45", arrivePZV2: "02:15" },
-            { departHQ: "02:15", arrivePZV2: "02:45" },
-            { departHQ: "02:45", arrivePZV2: "03:15" },
-            { departHQ: "03:15", arrivePZV2: "03:45" },
-            { departHQ: "03:45", arrivePZV2: "04:15" },
-            { departHQ: "04:15", arrivePZV2: "04:45" },
-            { departHQ: "04:45", arrivePZV2: "05:15" },
-            { departHQ: "05:15", arrivePZV2: "05:45" },
-            { departHQ: "05:45", arrivePZV2: "06:15" },
-            { departHQ: "06:15", arrivePZV2: "06:45" },
-            { departHQ: "06:45", arrivePZV2: "07:15" },
-            { departHQ: "07:15", arrivePZV2: "07:45" },
-            { departHQ: "07:45", arrivePZV2: "08:15" },
-            { departHQ: "08:15", arrivePZV2: "08:45" },
-            { departHQ: "08:45", arrivePZV2: "09:15" },
-            { departHQ: "09:15", arrivePZV2: "09:45" },
-            { departHQ: "09:45", arrivePZV2: "10:15" },
-            { departHQ: "10:15", arrivePZV2: "10:45" },
-            { departHQ: "10:45", arrivePZV2: "11:15" },
-            { departHQ: "11:15", arrivePZV2: "11:45" },
-            { departHQ: "11:45", arrivePZV2: "12:15" },
-            { departHQ: "12:15", arrivePZV2: "12:45" },
-            { departHQ: "12:45", arrivePZV2: "13:15" },
-            { departHQ: "13:15", arrivePZV2: "13:45" },
-            { departHQ: "13:45", arrivePZV2: "14:15" },
-            { departHQ: "14:15", arrivePZV2: "14:45" },
-            { departHQ: "14:45", arrivePZV2: "15:15" },
-            { departHQ: "15:15", arrivePZV2: "15:45" },
-            { departHQ: "15:45", arrivePZV2: "16:15" },
-            { departHQ: "16:15", arrivePZV2: "16:45" },
-            { departHQ: "16:45", arrivePZV2: "17:15" },
-            { departHQ: "17:15", arrivePZV2: "17:45" },
-            { departHQ: "17:45", arrivePZV2: "18:15" },
-            { departHQ: "18:15", arrivePZV2: "18:45" },
-            { departHQ: "18:45", arrivePZV2: "19:15" },
-            { departHQ: "19:15", arrivePZV2: "19:45" },
-            { departHQ: "19:45", arrivePZV2: "20:15" },
-            { departHQ: "20:15", arrivePZV2: "20:45" },
-            { departHQ: "20:45", arrivePZV2: "21:15" },
-            { departHQ: "21:15", arrivePZV2: "21:45" },
-            { departHQ: "21:45", arrivePZV2: "22:15" },
-            { departHQ: "22:15", arrivePZV2: "22:45" },
-            { departHQ: "22:45", arrivePZV2: "23:15" },
-            { departHQ: "23:15", arrivePZV2: "23:45" },
-            { departHQ: "23:45", arrivePZV2: "00:15" }
-        ];
+        if (openSearchButton && closeSearchButton && searchOverlay) {
+            openSearchButton.addEventListener('click', () => {
+                searchOverlay.classList.remove('hidden');
+            });
 
-        // Get current time in Dubai (GMT+4)
+            closeSearchButton.addEventListener('click', () => {
+                searchOverlay.classList.add('hidden');
+            });
+
+            // Add event listener to close overlay when clicking outside the content box
+            searchOverlay.addEventListener('click', (event) => {
+                // Check if the click is directly on the overlay background itself
+                if (event.target === searchOverlay) {
+                    searchOverlay.classList.add('hidden');
+                }
+            });
+        } else {
+            console.error("Search toggle buttons or overlay not found!");
+        }
+
+        // --- Coordinates ---
+        const pzv2Coords = { lat: 25.24014157306891, lon: 55.29637545172292 };
+        const hqCoords = { lat: 25.241891643659287, lon: 55.36597152473545 };
+
+        // --- Schedule Data (will be loaded dynamically) ---
+        let pzv2_to_hq = [];
+        let hq_to_pzv2 = [];
+        let scheduleLoaded = false;
+        const csvUrl = 'route-7-eghq-pzv1-pzv2-eghq-eff-08-september.csv'; // Relative path
+        const PROGRESS_WINDOW_MS = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+        // --- Helper Functions ---
         function getNowInDubaiTimezone() {
             const now = new Date();
             const dubaiOffset = 4 * 60; // Dubai is GMT+4
@@ -260,16 +247,14 @@
             return new Date(now.getTime() + offsetDiff * 60000);
         }
 
-        // Format time as HH:MM
         function formatTime(date) {
-            return date.toLocaleTimeString('en-US', {
+            return date.toLocaleTimeString('en-GB', {
                 hour: '2-digit',
                 minute: '2-digit',
-                hour12: false
+                hourCycle: 'h23'
             });
         }
 
-        // Format countdown
         function formatCountdown(milliseconds) {
             const totalSeconds = Math.floor(milliseconds / 1000);
             const hours = Math.floor(totalSeconds / 3600);
@@ -285,7 +270,6 @@
             }
         }
 
-        // Calculate travel time in minutes
         function calculateTravelTime(departTime, arriveTime) {
             const [departHours, departMinutes] = departTime.split(':').map(Number);
             const [arriveHours, arriveMinutes] = arriveTime.split(':').map(Number);
@@ -298,20 +282,129 @@
             return totalMinutes;
         }
 
-        // Update the display
+        // --- Haversine Distance Calculation ---
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius of the Earth in km
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const d = R * c; // Distance in km
+            return d;
+        }
+
+        function deg2rad(deg) {
+            return deg * (Math.PI / 180);
+        }
+
+        // --- Function to Load and Parse Schedule ---
+        async function loadSchedule() {
+            try {
+                const response = await fetch(csvUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status} while fetching ${csvUrl}`);
+                }
+                const csvText = await response.text();
+                
+                // Parse CSV
+                const lines = csvText.trim().split('\n'); // Split into lines
+                // Skip header rows (assuming first 2 rows are headers)
+                const dataLines = lines.slice(2); 
+
+                pzv2_to_hq = []; // Clear any previous data
+                hq_to_pzv2 = []; // Clear any previous data
+
+                dataLines.forEach(line => {
+                    const columns = line.trim().split(',');
+                    if (columns.length === 4) { // Ensure valid row
+                        const hqDeparture = columns[0];
+                        const pzv1 = columns[1]; // Not used currently, but parsed
+                        const pzv2 = columns[2];
+                        const hqArrival = columns[3];
+
+                        // Populate HQ -> PZV2 schedule
+                        if (hqDeparture && pzv2) {
+                             hq_to_pzv2.push({ departHQ: hqDeparture, arrivePZV2: pzv2 });
+                        }
+                       
+                        // Populate PZV2 -> HQ schedule
+                        if (pzv2 && hqArrival) {
+                            pzv2_to_hq.push({ departPZV2: pzv2, arriveHQ: hqArrival });
+                        }
+                    }
+                });
+                
+                console.log("Schedule loaded and parsed successfully.");
+                scheduleLoaded = true;
+
+            } catch (error) {
+                console.error("Failed to load or parse schedule:", error);
+                // Display an error message to the user on the page
+                 document.getElementById('next-buses').innerHTML = `<div class="text-red-600 dark:text-red-400 p-4 bg-red-100 dark:bg-red-900 rounded-md">Error loading bus schedule. Please check the CSV file or network connection.</div>`;
+                scheduleLoaded = false; // Ensure we know loading failed
+            }
+        }
+
+        // --- Function to Programmatically Select Route Tab ---
+        function selectRouteTab(directionValue) {
+             console.log(`Programmatically selecting tab: ${directionValue}`);
+             document.querySelectorAll('.route-tab').forEach(t => {
+                 const tabDirection = t.dataset.direction;
+                 // Remove active classes
+                 t.classList.remove('active', 'bg-primary-50', 'dark:bg-primary-900', 'text-primary-700', 'dark:text-primary-300');
+                 // Add default inactive classes
+                 t.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
+                 
+                 // Apply active classes to the target tab
+                 if (tabDirection === directionValue) {
+                     t.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
+                     t.classList.add('active', 'bg-primary-50', 'dark:bg-primary-900', 'text-primary-700', 'dark:text-primary-300');
+                 }
+             });
+             // Update display immediately after changing the tab state
+             updateDisplay();
+        }
+
+         // --- Function to start the regular update interval ---
+         function startUpdateInterval() {
+             console.log("Starting update interval.");
+             setInterval(updateDisplay, 1000); 
+         }
+
+        // --- Update Display (needs scheduleLoaded check) ---
         function updateDisplay() {
+            if (!scheduleLoaded) {
+                // Maybe show a loading indicator or wait message if not already showing error
+                console.log("Waiting for schedule to load...");
+                // Ensure loading message persists if needed
+                if (!document.getElementById('next-buses').querySelector('.text-red-600')) {
+                    document.getElementById('next-buses').innerHTML = `<div class="text-gray-500 dark:text-gray-400 p-4">Loading schedule...</div>`;
+                }
+                return; 
+            }
+            
             const now = getNowInDubaiTimezone();
             const currentTimeStr = formatTime(now);
             document.getElementById('current-time').textContent = currentTimeStr;
 
             const direction = document.querySelector('.route-tab.active').dataset.direction;
-            const schedule = direction === 'pzv2_to_hq' ? pzv2_to_hq : hq_to_pzv2;
+            // Use the globally loaded schedule data
+            const schedule = direction === 'pzv2_to_hq' ? pzv2_to_hq : hq_to_pzv2; 
             const nextBusesContainer = document.getElementById('next-buses');
             const scheduleList = document.getElementById('schedule-list');
             
-            // Clear previous content
-            nextBusesContainer.innerHTML = '';
+            // Clear previous content (only if schedule is loaded and valid)
+            nextBusesContainer.innerHTML = ''; 
             scheduleList.innerHTML = '';
+
+            // Check if schedule arrays are populated after loading
+            if (!schedule || schedule.length === 0) {
+                 nextBusesContainer.innerHTML = `<div class="text-yellow-600 dark:text-yellow-400 p-4 bg-yellow-100 dark:bg-yellow-900 rounded-md">Schedule data is empty or invalid for this direction.</div>`;
+                 return; // Stop processing if schedule is empty
+            }
 
             // Update page title based on direction
             const pageTitle = document.getElementById('page-title');
@@ -324,12 +417,26 @@
             tomorrow.setDate(tomorrow.getDate() + 1);
 
             schedule.forEach(entry => {
+                // Defensive check for entry structure
+                if (!entry) return;
                 const departTime = direction === 'pzv2_to_hq' ? entry.departPZV2 : entry.departHQ;
                 const arriveTime = direction === 'pzv2_to_hq' ? entry.arriveHQ : entry.arrivePZV2;
                 
+                // Ensure times exist before proceeding
+                if (!departTime || !arriveTime) {
+                    console.warn("Skipping schedule entry with missing times:", entry);
+                    return;
+                }
+
                 // Create Date objects for today and tomorrow
                 const [hours, minutes] = departTime.split(':').map(Number);
                 
+                 // Validate parsed times
+                if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+                    console.warn("Skipping schedule entry with invalid depart time format:", entry);
+                    return;
+                }
+
                 const todayDeparture = new Date(today);
                 todayDeparture.setHours(hours, minutes, 0, 0);
                 
@@ -358,39 +465,21 @@
             const allFutureDepartures = potentialDepartures.map(p => p.departTime);
 
             const nextThree = potentialDepartures.slice(0, 3);
+            
+             // Handle case where no future buses are found (e.g., end of day before schedule wraps)
+            if (nextThree.length === 0) {
+                 nextBusesContainer.innerHTML = `<div class="text-gray-500 dark:text-gray-400 p-4">No upcoming departures found for today/tomorrow.</div>`;
+            }
 
             // Display next buses
             nextThree.forEach((bus, index) => {
                 const isNext = index === 0;
-                const countdown = bus.departTime - now;
+                const countdown = bus.departTime - now; // Time remaining in ms
                 
                 let progress = 0;
                 if (isNext) {
-                    // Find the index of the current next departure in the full sorted list
-                    const currentDepIndex = allFutureDepartures.findIndex(dep => dep.getTime() === bus.departTime.getTime());
-                    
-                    // Get the previous departure time from the sorted list
-                    let previousDepartureTime = null;
-                    if (currentDepIndex > 0) {
-                        previousDepartureTime = allFutureDepartures[currentDepIndex - 1];
-                    } else {
-                        // If it's the first bus in our list, try to find the last departure from the *original* schedule for yesterday
-                        const lastScheduleEntry = schedule[schedule.length - 1];
-                        const lastDepartTime = direction === 'pzv2_to_hq' ? lastScheduleEntry.departPZV2 : lastScheduleEntry.departHQ;
-                        const [lastHours, lastMinutes] = lastDepartTime.split(':').map(Number);
-                        const yesterday = new Date(now);
-                        yesterday.setDate(yesterday.getDate() - 1);
-                        previousDepartureTime = new Date(yesterday);
-                        previousDepartureTime.setHours(lastHours, lastMinutes, 0, 0);
-                    }
-
-                    if (previousDepartureTime) {
-                        const totalIntervalMs = bus.departTime.getTime() - previousDepartureTime.getTime();
-                        const elapsedMs = now.getTime() - previousDepartureTime.getTime();
-                        if (totalIntervalMs > 0) { // Avoid division by zero
-                            progress = Math.max(0, Math.min(100, (elapsedMs / totalIntervalMs) * 100));
-                        }
-                    }
+                    // Option 1: % of fixed window remaining
+                    progress = Math.max(0, Math.min(100, (countdown / PROGRESS_WINDOW_MS) * 100));
                 }
 
                 const busEntry = document.createElement('div');
@@ -399,28 +488,28 @@
                 const timeInfo = document.createElement('div');
                 timeInfo.className = 'flex justify-between items-center mb-2';
                 
-                const departTime = document.createElement('div');
-                departTime.className = 'text-lg font-semibold text-gray-900 dark:text-white';
-                departTime.innerHTML = `
+                const departTimeDiv = document.createElement('div'); // Renamed variable to avoid conflict
+                departTimeDiv.className = 'text-lg font-semibold text-gray-900 dark:text-white';
+                departTimeDiv.innerHTML = `
                     <i class="fas fa-clock mr-2"></i>
                     ${formatTime(bus.departTime)}
                     ${bus.isTomorrow ? '<span class="text-sm font-normal normal-case text-gray-500 dark:text-gray-400 ml-2">(Tomorrow)</span>' : ''}
                 `;
                 
-                const arriveTime = document.createElement('div');
-                arriveTime.className = 'text-sm uppercase text-gray-500 dark:text-gray-400';
-                arriveTime.innerHTML = `
+                const arriveTimeDiv = document.createElement('div'); // Renamed variable
+                arriveTimeDiv.className = 'text-sm uppercase text-gray-500 dark:text-gray-400';
+                arriveTimeDiv.innerHTML = `
                     <i class="fas fa-flag-checkered mr-2"></i>
                     Arrives: ${bus.arriveTime}
                 `;
 
-                const travelTime = document.createElement('div');
-                travelTime.className = 'text-sm uppercase text-gray-500 dark:text-gray-400';
+                const travelTimeDiv = document.createElement('div'); // Renamed variable
+                travelTimeDiv.className = 'text-sm uppercase text-gray-500 dark:text-gray-400';
                 const travelMinutes = calculateTravelTime(
                     formatTime(bus.departTime),
                     bus.arriveTime
                 );
-                travelTime.innerHTML = `
+                travelTimeDiv.innerHTML = `
                     <i class="fas fa-hourglass-half mr-2"></i>
                     Travel time: ${travelMinutes} minutes
                 `;
@@ -432,11 +521,11 @@
                     Departing in: ${formatCountdown(countdown)}
                 `;
 
-                timeInfo.appendChild(departTime);
-                timeInfo.appendChild(arriveTime);
+                timeInfo.appendChild(departTimeDiv);
+                timeInfo.appendChild(arriveTimeDiv);
                 
                 busEntry.appendChild(timeInfo);
-                busEntry.appendChild(travelTime);
+                busEntry.appendChild(travelTimeDiv);
                 busEntry.appendChild(countdownDiv);
 
                 if (isNext) {
@@ -449,67 +538,300 @@
                 nextBusesContainer.appendChild(busEntry);
             });
 
-            // Display full schedule
-            schedule.forEach(entry => {
-                const departTime = direction === 'pzv2_to_hq' ? entry.departPZV2 : entry.departHQ;
-                const arriveTime = direction === 'pzv2_to_hq' ? entry.arriveHQ : entry.arrivePZV2;
-                
-                const scheduleEntry = document.createElement('div');
-                scheduleEntry.className = 'flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700 last:border-0';
-                
-                const timeInfo = document.createElement('div');
-                timeInfo.className = 'uppercase text-gray-700 dark:text-gray-300';
-                timeInfo.innerHTML = `
-                    <i class="fas fa-clock mr-2"></i>
-                    ${departTime} → ${arriveTime}
-                `;
-                
-                const travelTime = document.createElement('div');
-                travelTime.className = 'text-sm uppercase text-gray-500 dark:text-gray-400';
-                const travelMinutes = calculateTravelTime(departTime, arriveTime);
-                travelTime.innerHTML = `
-                    <i class="fas fa-hourglass-half mr-2"></i>
-                    ${travelMinutes} min
-                `;
-                
-                scheduleEntry.appendChild(timeInfo);
-                scheduleEntry.appendChild(travelTime);
-                scheduleList.appendChild(scheduleEntry);
-            });
+            // Display full schedule (if visible and loaded)
+            const fullScheduleContainer = document.getElementById('full-schedule');
+            if (!fullScheduleContainer.classList.contains('hidden')) {
+                schedule.forEach(entry => {
+                     // Add similar checks as above
+                    if (!entry) return;
+                    const departTimeStr = direction === 'pzv2_to_hq' ? entry.departPZV2 : entry.departHQ;
+                    const arriveTimeStr = direction === 'pzv2_to_hq' ? entry.arriveHQ : entry.arrivePZV2;
+                    if (!departTimeStr || !arriveTimeStr) return;
+
+                    const scheduleEntry = document.createElement('div');
+                    scheduleEntry.className = 'flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700 last:border-0';
+                    
+                    const timeInfo = document.createElement('div');
+                    timeInfo.className = 'uppercase text-gray-700 dark:text-gray-300';
+                    timeInfo.innerHTML = `
+                        <i class="fas fa-clock mr-2"></i>
+                        ${departTimeStr} → ${arriveTimeStr}
+                    `;
+                    
+                    const travelTime = document.createElement('div');
+                    travelTime.className = 'text-sm uppercase text-gray-500 dark:text-gray-400';
+                    const travelMinutes = calculateTravelTime(departTimeStr, arriveTimeStr);
+                    travelTime.innerHTML = `
+                        <i class="fas fa-hourglass-half mr-2"></i>
+                        ${travelMinutes} min
+                    `;
+                    
+                    scheduleEntry.appendChild(timeInfo);
+                    scheduleEntry.appendChild(travelTime);
+                    scheduleList.appendChild(scheduleEntry);
+                });
+            }
         }
 
-        // Toggle full schedule
+        // Search Function Logic (needs scheduleLoaded check)
+        const searchButtonInOverlay = searchOverlay.querySelector('#search-button');
+        if (searchButtonInOverlay) {
+             searchButtonInOverlay.addEventListener('click', () => {
+                if (!scheduleLoaded) {
+                     document.getElementById('search-results').innerHTML = `<p class="text-yellow-600 dark:text-yellow-400">Schedule is still loading, please wait...</p>`;
+                     return;
+                }
+                const searchInput = document.getElementById('arrival-time-search');
+                const desiredArrivalTimeStr = searchInput.value;
+                const resultsContainer = document.getElementById('search-results');
+                resultsContainer.innerHTML = ''; // Clear previous results
+    
+                if (!desiredArrivalTimeStr) {
+                    resultsContainer.innerHTML = `<p class="text-red-600 dark:text-red-400">Please enter a desired arrival time.</p>`;
+                    return;
+                }
+
+                // --- Check Direction --- 
+                const direction = document.querySelector('.route-tab.active').dataset.direction;
+                if (direction !== 'pzv2_to_hq') {
+                    resultsContainer.innerHTML = `<p class="text-yellow-600 dark:text-yellow-400">Arrival time search is only available for the PZV2 → HQ route.</p>`;
+                    return; 
+                }
+                // --- End Check Direction --- 
+    
+                try {
+                    const now = getNowInDubaiTimezone();
+                    
+                    // Hardcode schedule and keys for PZV2 -> HQ route since we checked the direction
+                    const schedule = pzv2_to_hq;
+                    const arrivalKey = 'arriveHQ';
+                    const departureKey = 'departPZV2';
+                    const destination = 'HQ';
+
+                    // Add check if schedule is loaded and valid
+                    if (!schedule || schedule.length === 0) {
+                         resultsContainer.innerHTML = `<p class="text-yellow-600 dark:text-yellow-400">Schedule data is empty or invalid. Cannot perform search.</p>`;
+                         return;
+                    }
+
+                    const [targetHours, targetMinutes] = desiredArrivalTimeStr.split(':').map(Number);
+                    
+                    // Validate search time input
+                    if (isNaN(targetHours) || isNaN(targetMinutes) || targetHours < 0 || targetHours > 23 || targetMinutes < 0 || targetMinutes > 59) {
+                         resultsContainer.innerHTML = `<p class="text-red-600 dark:text-red-400">Invalid time format entered.</p>`;
+                         return;
+                    }
+
+                    const targetArrivalDate = new Date(now); // Use today's date as reference
+                    targetArrivalDate.setHours(targetHours, targetMinutes, 0, 0);
+
+                    const relevantTrips = [];
+
+                    schedule.forEach(trip => {
+                        // Add checks for trip structure and time validity
+                        if (!trip || !trip[arrivalKey] || !trip[departureKey]) return;
+
+                        const [arrHours, arrMinutes] = trip[arrivalKey].split(':').map(Number);
+                         if (isNaN(arrHours) || isNaN(arrMinutes)) return; // Skip invalid arrival times in schedule
+
+                        const scheduledArrivalDate = new Date(now);
+                        scheduledArrivalDate.setHours(arrHours, arrMinutes, 0, 0);
+
+                        // Handle potential midnight wrap-around for comparison
+                        if (scheduledArrivalDate <= targetArrivalDate) {
+                             const [depHours, depMinutes] = trip[departureKey].split(':').map(Number);
+                              if (isNaN(depHours) || isNaN(depMinutes)) return; // Skip invalid depart times
+
+                             const scheduledDepartureDate = new Date(now);
+                             scheduledDepartureDate.setHours(depHours, depMinutes, 0, 0);
+                             
+                             if (scheduledArrivalDate < scheduledDepartureDate) {
+                                 scheduledDepartureDate.setDate(scheduledDepartureDate.getDate() -1);
+                             }
+
+                            relevantTrips.push({
+                                departureDateTime: scheduledDepartureDate,
+                                arrivalDateTime: scheduledArrivalDate,
+                                departStr: trip[departureKey],
+                                arriveStr: trip[arrivalKey]
+                            });
+                        }
+                    });
+
+                    // Sort by arrival time, latest first
+                    relevantTrips.sort((a, b) => b.arrivalDateTime - a.arrivalDateTime);
+
+                    const lastTwoTrips = relevantTrips.slice(0, 2);
+
+                    if (lastTwoTrips.length === 0) {
+                        // Destination is always HQ now
+                        resultsContainer.innerHTML = `<p class="text-gray-600 dark:text-gray-400">No buses found arriving at HQ by ${desiredArrivalTimeStr} today.</p>`; 
+                    } else {
+                        resultsContainer.innerHTML = `<h3 class="text-md uppercase font-semibold text-gray-800 dark:text-gray-200 mb-2">Latest buses arriving at HQ by ${desiredArrivalTimeStr}:</h3>`;
+                        lastTwoTrips.forEach(trip => {
+                            const travelMinutes = calculateTravelTime(trip.departStr, trip.arriveStr);
+                            const tripElement = document.createElement('div');
+                            tripElement.className = 'bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm text-sm'; 
+                            tripElement.innerHTML = `
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-gray-700 dark:text-gray-300">
+                                        <i class="fas fa-clock text-gray-500 dark:text-gray-400 mr-1"></i> Departs PZV2: 
+                                        <strong class="text-gray-900 dark:text-white">${trip.departStr}</strong>
+                                    </span>
+                                    <span class="text-gray-700 dark:text-gray-300">
+                                        <i class="fas fa-flag-checkered text-gray-500 dark:text-gray-400 mr-1"></i> Arrives HQ: 
+                                        <strong class="text-gray-900 dark:text-white">${trip.arriveStr}</strong>
+                                    </span>
+                                </div>
+                                <div class="text-xs uppercase text-gray-500 dark:text-gray-400 mt-1">
+                                    <i class="fas fa-hourglass-half mr-1"></i> Travel Time: ${travelMinutes} min
+                                </div>
+                            `;
+                            resultsContainer.appendChild(tripElement);
+                        });
+                    }
+                } catch (error) {
+                    console.error("Search error:", error);
+                    resultsContainer.innerHTML = `<p class="text-red-600 dark:text-red-400">Error processing search. Please check the time format.</p>`;
+                }
+            });
+        } else {
+            console.error("Search button within overlay not found!");
+        }
+
+        // Toggle full schedule (needs scheduleLoaded check)
         document.getElementById('toggleSchedule').addEventListener('click', function() {
+            if (!scheduleLoaded) return; // Don't toggle if schedule not loaded
             const fullSchedule = document.getElementById('full-schedule');
             const button = this;
-            if (fullSchedule.classList.contains('hidden')) {
-                fullSchedule.classList.remove('hidden');
-                button.innerHTML = '<i class="fas fa-calendar-times mr-2"></i>Hide Full Schedule';
-            } else {
-                fullSchedule.classList.add('hidden');
+            const scheduleList = document.getElementById('schedule-list'); // Need list to populate
+            
+            if (fullSchedule.style.maxHeight && fullSchedule.style.maxHeight !== '0px') { // Check if currently expanded
+                // Collapse
+                fullSchedule.style.maxHeight = '0px';
+                fullSchedule.style.opacity = '0';
+                // Optional: wait for transition to finish before fully hiding if needed for accessibility, 
+                // but for visual collapse max-height=0 is often enough.
+                // setTimeout(() => { fullSchedule.classList.add('hidden'); }, 500); // Delay matches duration-500
                 button.innerHTML = '<i class="fas fa-calendar-alt mr-2"></i>Show Full Schedule';
+            } else {
+                // Expand
+                // Populate before showing
+                scheduleList.innerHTML = ''; // Clear previous
+                const direction = document.querySelector('.route-tab.active').dataset.direction;
+                const schedule = direction === 'pzv2_to_hq' ? pzv2_to_hq : hq_to_pzv2;
+                 if (schedule && schedule.length > 0) {
+                     schedule.forEach(entry => {
+                         // Add checks for entry validity
+                         if (!entry) return;
+                         const departTimeStr = direction === 'pzv2_to_hq' ? entry.departPZV2 : entry.departHQ;
+                         const arriveTimeStr = direction === 'pzv2_to_hq' ? entry.arriveHQ : entry.arrivePZV2;
+                         if (!departTimeStr || !arriveTimeStr) return;
+                         
+                         const scheduleEntry = document.createElement('div');
+                         scheduleEntry.className = 'flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700 last:border-0';
+                         
+                         const timeInfo = document.createElement('div');
+                         timeInfo.className = 'uppercase text-gray-700 dark:text-gray-300';
+                         timeInfo.innerHTML = `
+                             <i class="fas fa-clock mr-2"></i>
+                             ${departTimeStr} → ${arriveTimeStr}
+                         `;
+                         
+                         const travelTime = document.createElement('div');
+                         travelTime.className = 'text-sm uppercase text-gray-500 dark:text-gray-400';
+                         const travelMinutes = calculateTravelTime(departTimeStr, arriveTimeStr);
+                         travelTime.innerHTML = `
+                             <i class="fas fa-hourglass-half mr-2"></i>
+                             ${travelMinutes} min
+                         `;
+                         
+                         scheduleEntry.appendChild(timeInfo);
+                         scheduleEntry.appendChild(travelTime);
+                         scheduleList.appendChild(scheduleEntry);
+                     });
+                 } else {
+                    scheduleList.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Schedule data not available.</p>';
+                 }
+                
+                // fullSchedule.classList.remove('hidden'); // Remove hidden immediately
+                // Set max-height to scrollHeight to animate open
+                fullSchedule.style.opacity = '1';
+                fullSchedule.style.maxHeight = fullSchedule.scrollHeight + "px"; 
+                button.innerHTML = '<i class="fas fa-calendar-times mr-2"></i>Hide Full Schedule';
             }
         });
 
-        // Direction change handler
+        // Direction change handler (User Click)
         document.querySelectorAll('.route-tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                // Update active state
-                document.querySelectorAll('.route-tab').forEach(t => {
-                    t.classList.remove('active', 'bg-primary-50', 'dark:bg-primary-900', 'text-primary-700', 'dark:text-primary-300');
-                    t.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
-                });
-                tab.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
-                tab.classList.add('active', 'bg-primary-50', 'dark:bg-primary-900', 'text-primary-700', 'dark:text-primary-300');
+                // Logic to update active state based *on the clicked tab*
+                const clickedDirection = tab.dataset.direction;
+                 document.querySelectorAll('.route-tab').forEach(t => {
+                     t.classList.remove('active', 'bg-primary-50', 'dark:bg-primary-900', 'text-primary-700', 'dark:text-primary-300');
+                     t.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
+                 });
+                 tab.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
+                 tab.classList.add('active', 'bg-primary-50', 'dark:bg-primary-900', 'text-primary-700', 'dark:text-primary-300');
+
+                // Update display for the manually clicked tab
+                updateDisplay(); 
                 
-                // Update display
-                updateDisplay();
+                // If full schedule is visible, collapse it using animation
+                const fullSchedule = document.getElementById('full-schedule');
+                const toggleButton = document.getElementById('toggleSchedule');
+                // Check if it's currently expanded (maxHeight is not 0px)
+                if (fullSchedule.style.maxHeight && fullSchedule.style.maxHeight !== '0px') { 
+                    fullSchedule.style.maxHeight = '0px'; // Collapse it
+                    fullSchedule.style.opacity = '0';
+                    toggleButton.innerHTML = '<i class="fas fa-calendar-alt mr-2"></i>Show Full Schedule'; // Reset button text
+                }
             });
         });
 
-        // Initial update and set interval
-        updateDisplay();
-        setInterval(updateDisplay, 1000);
+        // --- Initialisation ---
+        async function initializeApp() {
+            // 1. Load schedule
+            await loadSchedule(); 
+            if (!scheduleLoaded) {
+                 console.error("Initialization failed: Schedule could not be loaded.");
+                 return; // Stop initialization if schedule failed
+            }
+
+            // 2. Try Geolocation to set initial tab
+            if (navigator.geolocation) {
+                 console.log("Attempting geolocation...");
+                 navigator.geolocation.getCurrentPosition(
+                     (position) => { // Success
+                         const userLat = position.coords.latitude;
+                         const userLon = position.coords.longitude;
+                         const distPZV2 = calculateDistance(userLat, userLon, pzv2Coords.lat, pzv2Coords.lon);
+                         const distHQ = calculateDistance(userLat, userLon, hqCoords.lat, hqCoords.lon);
+                         
+                         const defaultDirection = (distPZV2 <= distHQ) ? 'pzv2_to_hq' : 'hq_to_pzv2';
+                         console.log(`Geolocation success: User closer to ${defaultDirection === 'pzv2_to_hq' ? 'PZV2' : 'HQ'} (${distPZV2.toFixed(2)}km vs ${distHQ.toFixed(2)}km). Setting default route.`);
+                         selectRouteTab(defaultDirection); // Selects tab and triggers initial updateDisplay
+                         startUpdateInterval(); // Start interval *after* initial setup based on location
+                     },
+                     (error) => { // Error / Denied
+                         console.warn(`Geolocation error (${error.code}): ${error.message}. Defaulting to PZV2 -> HQ.`);
+                         selectRouteTab('pzv2_to_hq'); // Default tab (also triggers initial updateDisplay)
+                         startUpdateInterval(); // Start interval *after* default setup
+                     },
+                     {
+                         enableHighAccuracy: false, 
+                         timeout: 10000, 
+                         maximumAge: 60000 
+                     }
+                 );
+             } else { // Geolocation not supported
+                 console.warn("Geolocation is not supported by this browser. Defaulting to PZV2 -> HQ.");
+                 selectRouteTab('pzv2_to_hq'); // Default tab (also triggers initial updateDisplay)
+                 startUpdateInterval(); // Start interval *after* default setup
+             }
+        }
+
+        initializeApp(); // Start the app initialization
 
         // Register service worker for PWA
         if ('serviceWorker' in navigator) {
