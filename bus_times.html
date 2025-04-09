@@ -50,6 +50,9 @@
         }
     </script>
     <style type="text/tailwindcss">
+        html {
+            scroll-padding-top: 2rem; /* Add scroll padding to prevent header overlap */
+        }
         @layer utilities {
             .progress-bar {
                 @apply relative overflow-hidden absolute bottom-0 left-0 h-1.5 bg-gradient-to-r from-primary-500 to-primary-700 transition-all duration-1000 ease-linear;
@@ -96,7 +99,7 @@
 </head>
 <body class="h-full bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
     <div class="min-h-full">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
             <!-- Header -->
             <div class="flex justify-between items-center mb-6 sm:mb-8" style="animation: fadeInUp 0.5s ease-out forwards;">
                 <h1 class="text-2xl font-bold uppercase text-gray-900 dark:text-white flex items-center" id="page-title">
@@ -148,7 +151,7 @@
             </div>
 
             <!-- Next Buses -->
-            <div class="mb-6" style="animation: fadeInUp 0.5s 0.3s ease-out forwards; opacity: 0;">
+            <div class="mb-5" style="animation: fadeInUp 0.5s 0.3s ease-out forwards; opacity: 0;">
                 <h2 class="text-lg uppercase font-semibold tracking-wider text-gray-900 dark:text-white mb-4">Next Departures</h2>
                 <div id="next-buses" class="space-y-3 sm:space-y-4">
                     <!-- Bus entries will be inserted here -->
@@ -156,7 +159,7 @@
             </div>
 
             <!-- Full Schedule -->
-            <div id="full-schedule" class="opacity-0 transition-all duration-500 ease-in-out max-h-0 overflow-hidden">
+            <div id="full-schedule" class="opacity-0 transition-all duration-500 ease-in-out max-h-0 overflow-hidden scroll-mt-4">
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Full Schedule</h2>
                     <div id="schedule-list" class="space-y-2">
@@ -480,7 +483,7 @@
                 }
 
                 const busEntry = document.createElement('div');
-                busEntry.className = `relative overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm p-5 ${isNext ? 'ring-2 ring-primary-500 dark:ring-primary-600' : ''}`;
+                busEntry.className = `relative overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm p-5 ${isNext ? 'ring-2 ring-primary-500 dark:bg-gray-700 dark:ring-primary-500' : 'dark:bg-gray-800'}`;
                 
                 const timeInfo = document.createElement('div');
                 timeInfo.className = 'flex justify-between items-center mb-3';
@@ -668,25 +671,21 @@
             const fullSchedule = document.getElementById('full-schedule');
             const button = this;
             const scheduleList = document.getElementById('schedule-list'); // Need list to populate
+            const buttonSpan = button.querySelector('span'); // Get the span for text update
             
             if (fullSchedule.style.maxHeight && fullSchedule.style.maxHeight !== '0px') { // Check if currently expanded
                 // Collapse
                 fullSchedule.style.maxHeight = '0px';
                 fullSchedule.style.opacity = '0';
-                // Optional: wait for transition to finish before fully hiding if needed for accessibility, 
-                // but for visual collapse max-height=0 is often enough.
-                // setTimeout(() => { fullSchedule.classList.add('hidden'); }, 500); // Delay matches duration-500
-                button.querySelector('i').classList.replace('fa-calendar-times', 'fa-calendar-alt');
-                button.querySelector('span').textContent = 'Show Full Schedule';
+                if (buttonSpan) buttonSpan.textContent = 'Show Full Schedule'; 
+                button.querySelector('i').classList.replace('fa-calendar-times', 'fa-calendar-alt'); // Change icon
             } else {
                 // Expand
-                // Populate before showing
-                scheduleList.innerHTML = ''; // Clear previous
+                scheduleList.innerHTML = ''; 
                 const direction = document.querySelector('.route-tab.active').dataset.direction;
                 const schedule = direction === 'pzv2_to_hq' ? pzv2_to_hq : hq_to_pzv2;
                  if (schedule && schedule.length > 0) {
                      schedule.forEach(entry => {
-                         // Add checks for entry validity
                          if (!entry) return;
                          const departTimeStr = direction === 'pzv2_to_hq' ? entry.departPZV2 : entry.departHQ;
                          const arriveTimeStr = direction === 'pzv2_to_hq' ? entry.arriveHQ : entry.arrivePZV2;
@@ -696,14 +695,14 @@
                          scheduleEntry.className = 'flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700 last:border-0';
                          
                          const timeInfo = document.createElement('div');
-                         timeInfo.className = 'uppercase text-xs tracking-wide text-gray-700 dark:text-gray-300';
+                         timeInfo.className = 'uppercase text-xs tracking-wide text-gray-700 dark:text-gray-300'; // Smaller text
                          timeInfo.innerHTML = `
                              <i class="fas fa-clock mr-1"></i>
                              ${departTimeStr} → ${arriveTimeStr}
                          `;
                          
                          const travelTime = document.createElement('div');
-                         travelTime.className = 'text-xs uppercase text-gray-500 dark:text-gray-400';
+                         travelTime.className = 'text-xs uppercase text-gray-500 dark:text-gray-400'; // Smaller text
                          const travelMinutes = calculateTravelTime(departTimeStr, arriveTimeStr);
                          travelTime.innerHTML = `
                              <i class="fas fa-hourglass-half mr-1"></i>
@@ -718,12 +717,16 @@
                     scheduleList.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">Schedule data not available.</p>';
                  }
                 
-                // fullSchedule.classList.remove('hidden'); // Remove hidden immediately
-                // Set max-height to scrollHeight to animate open
                 fullSchedule.style.opacity = '1';
                 fullSchedule.style.maxHeight = fullSchedule.scrollHeight + "px"; 
-                button.querySelector('i').classList.replace('fa-calendar-alt', 'fa-calendar-times');
-                button.querySelector('span').textContent = 'Hide Full Schedule';
+                if (buttonSpan) buttonSpan.textContent = 'Hide Full Schedule';
+                button.querySelector('i').classList.replace('fa-calendar-alt', 'fa-calendar-times'); // Change icon
+
+                // Scroll to the full schedule section smoothly
+                // Use setTimeout to allow the browser to calculate scrollHeight before scrolling
+                setTimeout(() => {
+                    fullSchedule.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100); // Small delay
             }
         });
 
