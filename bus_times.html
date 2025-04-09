@@ -15,10 +15,10 @@
     <!-- PWA Support -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#312E81">
-    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="icon" type="image/png" href="@favicon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="@favicon.png">
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -126,12 +126,12 @@
             </div>
 
             <!-- Direction Controls -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-5" style="animation: fadeInUp 0.5s 0.2s ease-out forwards; opacity: 0;">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-4" style="animation: fadeInUp 0.5s 0.2s ease-out forwards; opacity: 0;">
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div class="flex w-full sm:w-auto">
                         <div class="flex rounded-md shadow-sm w-full sm:w-auto" role="group">
                             <button type="button" 
-                                class="route-tab active uppercase px-4 py-2.5 text-sm font-medium rounded-l-md border border-gray-200 dark:border-gray-700 bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-800 focus:z-10 focus:ring-2 focus:ring-primary-500"
+                                class="route-tab active uppercase px-4 py-2.5 text-sm font-medium rounded-l-md border border-gray-200 dark:border-gray-700 bg-primary-50 dark:bg-primary-700 text-primary-700 dark:text-white hover:bg-primary-100 dark:hover:bg-primary-600 focus:z-10 focus:ring-2 focus:ring-primary-500"
                                 data-direction="pzv2_to_hq">
                                 <i class="fas fa-bus mr-2"></i>PZV2 → HQ
                             </button>
@@ -361,15 +361,18 @@
              console.log(`Programmatically selecting tab: ${directionValue}`);
              document.querySelectorAll('.route-tab').forEach(t => {
                  const tabDirection = t.dataset.direction;
-                 // Remove active classes
-                 t.classList.remove('active', 'bg-primary-50', 'dark:bg-primary-900', 'text-primary-700', 'dark:text-primary-300');
+                 // Remove active classes (generic)
+                 t.classList.remove('active', 
+                                  'bg-primary-50', 'dark:bg-primary-700', 'dark:bg-primary-900', // Remove old dark bg possibilities 
+                                  'text-primary-700', 'dark:text-white', 'dark:text-primary-300'); // Remove old dark text possibilities
                  // Add default inactive classes
                  t.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
                  
                  // Apply active classes to the target tab
                  if (tabDirection === directionValue) {
                      t.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
-                     t.classList.add('active', 'bg-primary-50', 'dark:bg-primary-900', 'text-primary-700', 'dark:text-primary-300');
+                     // Apply NEW active styles
+                     t.classList.add('active', 'bg-primary-50', 'dark:bg-primary-700', 'text-primary-700', 'dark:text-white'); 
                  }
              });
              // Update display immediately after changing the tab state
@@ -483,13 +486,13 @@
                 }
 
                 const busEntry = document.createElement('div');
-                busEntry.className = `relative overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm p-5 ${isNext ? 'ring-2 ring-primary-500 dark:bg-gray-700 dark:ring-primary-500' : 'dark:bg-gray-800'}`;
+                busEntry.className = `relative overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 ${isNext ? 'ring-2 ring-primary-500 dark:bg-gray-700 dark:ring-primary-500' : 'dark:bg-gray-800'}`;
                 
-                const timeInfo = document.createElement('div');
-                timeInfo.className = 'flex justify-between items-center mb-3';
+                const topRow = document.createElement('div');
+                topRow.className = 'flex justify-between items-center mb-3'; 
                 
                 const departTimeDiv = document.createElement('div');
-                departTimeDiv.className = 'text-xl font-semibold text-gray-900 dark:text-white flex items-center';
+                departTimeDiv.className = 'text-lg font-semibold text-gray-900 dark:text-white flex items-center'; 
                 departTimeDiv.innerHTML = `
                     <i class="far fa-clock mr-2 text-gray-500 dark:text-gray-400"></i>
                     <span>${formatTime(bus.departTime)}</span>
@@ -502,8 +505,12 @@
                     <i class="fas fa-flag-checkered mr-2"></i>
                     Arrives: ${bus.arriveTime}
                 `;
+                
+                topRow.appendChild(departTimeDiv);
+                topRow.appendChild(arriveTimeDiv);
+                busEntry.appendChild(topRow);
 
-                const travelTimeDiv = document.createElement('div');
+                const travelTimeDiv = document.createElement('div'); 
                 travelTimeDiv.className = 'text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3 flex items-center';
                 const travelMinutes = calculateTravelTime(
                     formatTime(bus.departTime),
@@ -513,19 +520,14 @@
                     <i class="fas fa-hourglass-half mr-2 fa-fw"></i>
                     Travel time: ${travelMinutes} minutes
                 `;
+                busEntry.appendChild(travelTimeDiv);
 
                 const countdownDiv = document.createElement('div');
-                countdownDiv.className = 'text-lg uppercase font-bold text-primary-600 dark:text-primary-400 flex items-center';
+                countdownDiv.className = 'text-base uppercase font-bold text-primary-600 dark:text-primary-400 flex items-center'; 
                 countdownDiv.innerHTML = `
                     <i class="fas fa-stopwatch mr-2 fa-fw"></i>
                     Departing in: ${formatCountdown(countdown)}
                 `;
-
-                timeInfo.appendChild(departTimeDiv);
-                timeInfo.appendChild(arriveTimeDiv);
-                
-                busEntry.appendChild(timeInfo);
-                busEntry.appendChild(travelTimeDiv);
                 busEntry.appendChild(countdownDiv);
 
                 if (isNext) {
@@ -722,25 +724,29 @@
                 if (buttonSpan) buttonSpan.textContent = 'Hide Full Schedule';
                 button.querySelector('i').classList.replace('fa-calendar-alt', 'fa-calendar-times'); // Change icon
 
-                // Scroll to the full schedule section smoothly
-                // Use setTimeout to allow the browser to calculate scrollHeight before scrolling
+                // Scroll to the full schedule section smoothly, aligning top
                 setTimeout(() => {
-                    fullSchedule.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }, 100); // Small delay
+                    fullSchedule.scrollIntoView({ behavior: 'smooth', block: 'start' }); // Changed block to 'start'
+                }, 100); 
             }
         });
 
         // Direction change handler (User Click)
         document.querySelectorAll('.route-tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                // Logic to update active state based *on the clicked tab*
                 const clickedDirection = tab.dataset.direction;
                  document.querySelectorAll('.route-tab').forEach(t => {
-                     t.classList.remove('active', 'bg-primary-50', 'dark:bg-primary-900', 'text-primary-700', 'dark:text-primary-300');
+                     // Remove active classes (generic)
+                     t.classList.remove('active', 
+                                      'bg-primary-50', 'dark:bg-primary-700', 'dark:bg-primary-900', // Remove old dark bg possibilities 
+                                      'text-primary-700', 'dark:text-white', 'dark:text-primary-300'); // Remove old dark text possibilities
+                     // Add default inactive classes
                      t.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
                  });
+                 // Remove inactive styles from clicked tab
                  tab.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
-                 tab.classList.add('active', 'bg-primary-50', 'dark:bg-primary-900', 'text-primary-700', 'dark:text-primary-300');
+                 // Apply NEW active styles
+                 tab.classList.add('active', 'bg-primary-50', 'dark:bg-primary-700', 'text-primary-700', 'dark:text-white'); 
 
                 // Update display for the manually clicked tab
                 updateDisplay(); 
