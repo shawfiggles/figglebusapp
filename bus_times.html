@@ -14,10 +14,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- PWA Support -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4F46E5">
+    <meta name="theme-color" content="#312E81">
+    <link rel="icon" type="image/png" href="favicon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://www.example.com/icon-192x192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -33,7 +34,13 @@
                             500: '#6366F1',
                             600: '#4F46E5',
                             700: '#4338CA',
+                            800: '#3730A3',
+                            900: '#312E81'
                         },
+                        gray: {
+                            800: '#1F2937',
+                            900: '#111827'
+                        }
                     },
                     animation: {
                         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
@@ -45,26 +52,23 @@
     <style type="text/tailwindcss">
         @layer utilities {
             .progress-bar {
-                @apply relative overflow-hidden absolute bottom-0 left-0 h-1 bg-gradient-to-r from-primary-500 to-primary-700 transition-all duration-1000 ease-linear;
+                @apply relative overflow-hidden absolute bottom-0 left-0 h-1.5 bg-gradient-to-r from-primary-500 to-primary-700 transition-all duration-1000 ease-linear;
             }
             .progress-bar::after {
                 content: '';
                 @apply absolute top-0 left-0 w-full h-full;
-                /* Make the opaque part narrower and ensure it starts/ends fully off-screen */
                 background: linear-gradient(90deg, 
                     rgba(255,255,255,0) 0%, 
-                    rgba(255,255,255,0) 25%, /* Start transparent */
-                    rgba(255,255,255,0.4) 50%, /* Peak highlight */
-                    rgba(255,255,255,0) 75%, /* End transparent */
+                    rgba(255,255,255,0) 25%,
+                    rgba(255,255,255,0.4) 50%,
+                    rgba(255,255,255,0) 75%,
                     rgba(255,255,255,0) 100%
                 );
-                /* Use background-size and animate background-position for potentially smoother results */
-                background-size: 200% 100%; /* Make gradient wider than the element */
-                animation: shimmer 2.5s infinite linear; /* Slightly slower */
+                background-size: 200% 100%;
+                animation: shimmer 2.5s infinite linear;
             }
         }
         @keyframes shimmer {
-            /* Animate background-position instead of transform */
             0% { background-position: 200% 0; } 
             100% { background-position: -200% 0; }
         }
@@ -90,69 +94,70 @@
         }
     </style>
 </head>
-<body class="h-full bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+<body class="h-full bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
     <div class="min-h-full">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
             <!-- Header -->
-            <div class="flex justify-between items-center mb-8" style="animation: fadeInUp 0.5s ease-out forwards;">
-                <h1 class="text-2xl font-bold uppercase text-gray-900 dark:text-white" id="page-title">
-                    Route 7: Next Buses (PZV2 → HQ)
+            <div class="flex justify-between items-center mb-6 sm:mb-8" style="animation: fadeInUp 0.5s ease-out forwards;">
+                <h1 class="text-2xl font-bold uppercase text-gray-900 dark:text-white flex items-center" id="page-title">
+                    <i class="fas fa-bus mr-3"></i>
+                    <span>ROUTE 7</span>
                 </h1>
-                <div class="flex items-center space-x-2"> <!-- Wrapper for header buttons -->
-                    <button id="open-search-button" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                        <i class="fas fa-search"></i>
+                <div class="flex items-center space-x-3">
+                    <button id="open-search-button" class="p-2.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                        <i class="fas fa-search fa-fw"></i>
                     </button>
-                    <button id="darkModeToggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                        <i class="fas fa-moon dark:hidden"></i>
-                        <i class="fas fa-sun hidden dark:block"></i>
+                    <button id="darkModeToggle" class="p-2.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                        <i class="fas fa-moon fa-fw dark:hidden"></i>
+                        <i class="fas fa-sun fa-fw hidden dark:block"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Current Time -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6" style="animation: fadeInUp 0.5s 0.1s ease-out forwards; opacity: 0;">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-5" style="animation: fadeInUp 0.5s 0.1s ease-out forwards; opacity: 0;">
                 <div class="text-center">
-                    <div class="text-sm uppercase text-gray-500 dark:text-gray-400">Current Time (Dubai)</div>
-                    <div id="current-time" class="text-2xl font-semibold text-gray-900 dark:text-white"></div>
+                    <div class="text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400">Current Time (Dubai)</div>
+                    <div id="current-time" class="text-3xl font-semibold text-gray-900 dark:text-white mt-1"></div>
                 </div>
             </div>
 
             <!-- Direction Controls -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6" style="animation: fadeInUp 0.5s 0.2s ease-out forwards; opacity: 0;">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-5" style="animation: fadeInUp 0.5s 0.2s ease-out forwards; opacity: 0;">
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div class="flex w-full sm:w-auto">
                         <div class="flex rounded-md shadow-sm w-full sm:w-auto" role="group">
                             <button type="button" 
-                                class="route-tab active uppercase px-4 py-2 text-sm font-medium rounded-l-md border border-gray-200 dark:border-gray-700 bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-800 focus:z-10 focus:ring-2 focus:ring-primary-500"
+                                class="route-tab active uppercase px-4 py-2.5 text-sm font-medium rounded-l-md border border-gray-200 dark:border-gray-700 bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-800 focus:z-10 focus:ring-2 focus:ring-primary-500"
                                 data-direction="pzv2_to_hq">
                                 <i class="fas fa-bus mr-2"></i>PZV2 → HQ
                             </button>
                             <button type="button" 
-                                class="route-tab uppercase px-4 py-2 text-sm font-medium rounded-r-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-10 focus:ring-2 focus:ring-primary-500"
+                                class="route-tab uppercase px-4 py-2.5 text-sm font-medium rounded-r-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-10 focus:ring-2 focus:ring-primary-500"
                                 data-direction="hq_to_pzv2">
                                 <i class="fas fa-bus mr-2"></i>HQ → PZV2
                             </button>
                         </div>
                     </div>
                     <button id="toggleSchedule"
-                        class="inline-flex uppercase items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+                        class="inline-flex uppercase items-center px-4 py-2.5 border border-transparent text-xs font-semibold tracking-wider rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors w-full sm:w-auto">
                         <i class="fas fa-calendar-alt mr-2"></i>
-                        Show Full Schedule
+                        <span>Show Full Schedule</span>
                     </button>
                 </div>
             </div>
 
             <!-- Next Buses -->
-            <div style="animation: fadeInUp 0.5s 0.3s ease-out forwards; opacity: 0;"> <!-- Wrapper for animation -->
-                <h2 class="text-lg uppercase font-semibold text-gray-900 dark:text-white mb-4">Next Departures</h2>
-                <div id="next-buses" class="space-y-4 mb-6">
+            <div class="mb-6" style="animation: fadeInUp 0.5s 0.3s ease-out forwards; opacity: 0;">
+                <h2 class="text-lg uppercase font-semibold tracking-wider text-gray-900 dark:text-white mb-4">Next Departures</h2>
+                <div id="next-buses" class="space-y-3 sm:space-y-4">
                     <!-- Bus entries will be inserted here -->
                 </div>
             </div>
 
             <!-- Full Schedule -->
-            <div id="full-schedule" class="opacity-0 transition-all duration-500 ease-in-out max-h-0 overflow-hidden"> <!-- Removed 'hidden' class -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+            <div id="full-schedule" class="opacity-0 transition-all duration-500 ease-in-out max-h-0 overflow-hidden">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Full Schedule</h2>
                     <div id="schedule-list" class="space-y-2">
                         <!-- Schedule entries will be inserted here -->
@@ -394,21 +399,13 @@
             // Use the globally loaded schedule data
             const schedule = direction === 'pzv2_to_hq' ? pzv2_to_hq : hq_to_pzv2; 
             const nextBusesContainer = document.getElementById('next-buses');
-            const scheduleList = document.getElementById('schedule-list');
             
-            // Clear previous content (only if schedule is loaded and valid)
-            nextBusesContainer.innerHTML = ''; 
-            scheduleList.innerHTML = '';
+            nextBusesContainer.innerHTML = ''; // Clear only next buses here
 
-            // Check if schedule arrays are populated after loading
             if (!schedule || schedule.length === 0) {
                  nextBusesContainer.innerHTML = `<div class="text-yellow-600 dark:text-yellow-400 p-4 bg-yellow-100 dark:bg-yellow-900 rounded-md">Schedule data is empty or invalid for this direction.</div>`;
                  return; // Stop processing if schedule is empty
             }
-
-            // Update page title based on direction
-            const pageTitle = document.getElementById('page-title');
-            pageTitle.textContent = `Route 7: Next Buses (${direction === 'pzv2_to_hq' ? 'PZV2 → HQ' : 'HQ → PZV2'})`;
 
             // Find next three departures
             const potentialDepartures = [];
@@ -483,41 +480,41 @@
                 }
 
                 const busEntry = document.createElement('div');
-                busEntry.className = `relative overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 ${isNext ? 'ring-2 ring-primary-500' : ''}`;
+                busEntry.className = `relative overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm p-5 ${isNext ? 'ring-2 ring-primary-500 dark:ring-primary-600' : ''}`;
                 
                 const timeInfo = document.createElement('div');
-                timeInfo.className = 'flex justify-between items-center mb-2';
+                timeInfo.className = 'flex justify-between items-center mb-3';
                 
-                const departTimeDiv = document.createElement('div'); // Renamed variable to avoid conflict
-                departTimeDiv.className = 'text-lg font-semibold text-gray-900 dark:text-white';
+                const departTimeDiv = document.createElement('div');
+                departTimeDiv.className = 'text-xl font-semibold text-gray-900 dark:text-white flex items-center';
                 departTimeDiv.innerHTML = `
-                    <i class="fas fa-clock mr-2"></i>
-                    ${formatTime(bus.departTime)}
-                    ${bus.isTomorrow ? '<span class="text-sm font-normal normal-case text-gray-500 dark:text-gray-400 ml-2">(Tomorrow)</span>' : ''}
+                    <i class="far fa-clock mr-2 text-gray-500 dark:text-gray-400"></i>
+                    <span>${formatTime(bus.departTime)}</span>
+                    ${bus.isTomorrow ? '<span class="text-xs font-normal normal-case text-gray-500 dark:text-gray-400 ml-2 pt-1">(Tomorrow)</span>' : ''}
                 `;
                 
-                const arriveTimeDiv = document.createElement('div'); // Renamed variable
-                arriveTimeDiv.className = 'text-sm uppercase text-gray-500 dark:text-gray-400';
+                const arriveTimeDiv = document.createElement('div');
+                arriveTimeDiv.className = 'text-sm uppercase text-gray-500 dark:text-gray-400 flex items-center';
                 arriveTimeDiv.innerHTML = `
                     <i class="fas fa-flag-checkered mr-2"></i>
                     Arrives: ${bus.arriveTime}
                 `;
 
-                const travelTimeDiv = document.createElement('div'); // Renamed variable
-                travelTimeDiv.className = 'text-sm uppercase text-gray-500 dark:text-gray-400';
+                const travelTimeDiv = document.createElement('div');
+                travelTimeDiv.className = 'text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3 flex items-center';
                 const travelMinutes = calculateTravelTime(
                     formatTime(bus.departTime),
                     bus.arriveTime
                 );
                 travelTimeDiv.innerHTML = `
-                    <i class="fas fa-hourglass-half mr-2"></i>
+                    <i class="fas fa-hourglass-half mr-2 fa-fw"></i>
                     Travel time: ${travelMinutes} minutes
                 `;
 
                 const countdownDiv = document.createElement('div');
-                countdownDiv.className = 'text-lg uppercase font-semibold text-primary-600 dark:text-primary-400';
+                countdownDiv.className = 'text-lg uppercase font-bold text-primary-600 dark:text-primary-400 flex items-center';
                 countdownDiv.innerHTML = `
-                    <i class="fas fa-stopwatch mr-2"></i>
+                    <i class="fas fa-stopwatch mr-2 fa-fw"></i>
                     Departing in: ${formatCountdown(countdown)}
                 `;
 
@@ -537,40 +534,6 @@
 
                 nextBusesContainer.appendChild(busEntry);
             });
-
-            // Display full schedule (if visible and loaded)
-            const fullScheduleContainer = document.getElementById('full-schedule');
-            if (!fullScheduleContainer.classList.contains('hidden')) {
-                schedule.forEach(entry => {
-                     // Add similar checks as above
-                    if (!entry) return;
-                    const departTimeStr = direction === 'pzv2_to_hq' ? entry.departPZV2 : entry.departHQ;
-                    const arriveTimeStr = direction === 'pzv2_to_hq' ? entry.arriveHQ : entry.arrivePZV2;
-                    if (!departTimeStr || !arriveTimeStr) return;
-
-                    const scheduleEntry = document.createElement('div');
-                    scheduleEntry.className = 'flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700 last:border-0';
-                    
-                    const timeInfo = document.createElement('div');
-                    timeInfo.className = 'uppercase text-gray-700 dark:text-gray-300';
-                    timeInfo.innerHTML = `
-                        <i class="fas fa-clock mr-2"></i>
-                        ${departTimeStr} → ${arriveTimeStr}
-                    `;
-                    
-                    const travelTime = document.createElement('div');
-                    travelTime.className = 'text-sm uppercase text-gray-500 dark:text-gray-400';
-                    const travelMinutes = calculateTravelTime(departTimeStr, arriveTimeStr);
-                    travelTime.innerHTML = `
-                        <i class="fas fa-hourglass-half mr-2"></i>
-                        ${travelMinutes} min
-                    `;
-                    
-                    scheduleEntry.appendChild(timeInfo);
-                    scheduleEntry.appendChild(travelTime);
-                    scheduleList.appendChild(scheduleEntry);
-                });
-            }
         }
 
         // Search Function Logic (needs scheduleLoaded check)
@@ -658,17 +621,17 @@
                         }
                     });
 
-                    // Sort by arrival time, latest first
+                    // Sort by arrival time, latest first (this also means closest to target time is first)
                     relevantTrips.sort((a, b) => b.arrivalDateTime - a.arrivalDateTime);
 
-                    const lastTwoTrips = relevantTrips.slice(0, 2);
+                    const lastFiveTrips = relevantTrips.slice(0, 5); // Changed slice from 2 to 5
 
-                    if (lastTwoTrips.length === 0) {
+                    if (lastFiveTrips.length === 0) {
                         // Destination is always HQ now
                         resultsContainer.innerHTML = `<p class="text-gray-600 dark:text-gray-400">No buses found arriving at HQ by ${desiredArrivalTimeStr} today.</p>`; 
                     } else {
-                        resultsContainer.innerHTML = `<h3 class="text-md uppercase font-semibold text-gray-800 dark:text-gray-200 mb-2">Latest buses arriving at HQ by ${desiredArrivalTimeStr}:</h3>`;
-                        lastTwoTrips.forEach(trip => {
+                        resultsContainer.innerHTML = `<h3 class="text-md uppercase font-semibold text-gray-800 dark:text-gray-200 mb-2">Latest buses arriving at HQ by ${desiredArrivalTimeStr} (up to 5):</h3>`; // Updated title
+                        lastFiveTrips.forEach(trip => {
                             const travelMinutes = calculateTravelTime(trip.departStr, trip.arriveStr);
                             const tripElement = document.createElement('div');
                             tripElement.className = 'bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm text-sm'; 
@@ -713,7 +676,8 @@
                 // Optional: wait for transition to finish before fully hiding if needed for accessibility, 
                 // but for visual collapse max-height=0 is often enough.
                 // setTimeout(() => { fullSchedule.classList.add('hidden'); }, 500); // Delay matches duration-500
-                button.innerHTML = '<i class="fas fa-calendar-alt mr-2"></i>Show Full Schedule';
+                button.querySelector('i').classList.replace('fa-calendar-times', 'fa-calendar-alt');
+                button.querySelector('span').textContent = 'Show Full Schedule';
             } else {
                 // Expand
                 // Populate before showing
@@ -732,17 +696,17 @@
                          scheduleEntry.className = 'flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700 last:border-0';
                          
                          const timeInfo = document.createElement('div');
-                         timeInfo.className = 'uppercase text-gray-700 dark:text-gray-300';
+                         timeInfo.className = 'uppercase text-xs tracking-wide text-gray-700 dark:text-gray-300';
                          timeInfo.innerHTML = `
-                             <i class="fas fa-clock mr-2"></i>
+                             <i class="fas fa-clock mr-1"></i>
                              ${departTimeStr} → ${arriveTimeStr}
                          `;
                          
                          const travelTime = document.createElement('div');
-                         travelTime.className = 'text-sm uppercase text-gray-500 dark:text-gray-400';
+                         travelTime.className = 'text-xs uppercase text-gray-500 dark:text-gray-400';
                          const travelMinutes = calculateTravelTime(departTimeStr, arriveTimeStr);
                          travelTime.innerHTML = `
-                             <i class="fas fa-hourglass-half mr-2"></i>
+                             <i class="fas fa-hourglass-half mr-1"></i>
                              ${travelMinutes} min
                          `;
                          
@@ -751,14 +715,15 @@
                          scheduleList.appendChild(scheduleEntry);
                      });
                  } else {
-                    scheduleList.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Schedule data not available.</p>';
+                    scheduleList.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">Schedule data not available.</p>';
                  }
                 
                 // fullSchedule.classList.remove('hidden'); // Remove hidden immediately
                 // Set max-height to scrollHeight to animate open
                 fullSchedule.style.opacity = '1';
                 fullSchedule.style.maxHeight = fullSchedule.scrollHeight + "px"; 
-                button.innerHTML = '<i class="fas fa-calendar-times mr-2"></i>Hide Full Schedule';
+                button.querySelector('i').classList.replace('fa-calendar-alt', 'fa-calendar-times');
+                button.querySelector('span').textContent = 'Hide Full Schedule';
             }
         });
 
@@ -784,7 +749,8 @@
                 if (fullSchedule.style.maxHeight && fullSchedule.style.maxHeight !== '0px') { 
                     fullSchedule.style.maxHeight = '0px'; // Collapse it
                     fullSchedule.style.opacity = '0';
-                    toggleButton.innerHTML = '<i class="fas fa-calendar-alt mr-2"></i>Show Full Schedule'; // Reset button text
+                    toggleButton.querySelector('i').classList.replace('fa-calendar-times', 'fa-calendar-alt');
+                    toggleButton.querySelector('span').textContent = 'Show Full Schedule'; // Reset button text
                 }
             });
         });
