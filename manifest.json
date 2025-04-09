@@ -2,7 +2,7 @@
     "name": "Route 7 Bus Times",
     "short_name": "Bus Times",
     "description": "Real-time bus schedule for Route 7 between PZV2 and HQ",
-    "start_url": "/bus_times.html",
+    "start_url": "/",
     "display": "standalone",
     "background_color": "#111827",
     "theme_color": "#312E81",
