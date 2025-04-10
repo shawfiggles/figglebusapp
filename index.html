@@ -125,52 +125,40 @@
     <div class="min-h-full">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
             <!-- Header -->
-            <div class="flex justify-between items-center mb-6 sm:mb-8" style="animation: fadeInUp 0.5s ease-out forwards;">
-                <h1 class="text-2xl font-bold uppercase text-gray-900 dark:text-white flex items-center" id="page-title">
-                    <i class="fas fa-bus mr-3"></i>
-                    <span>ROUTE 7</span>
-                </h1>
-                <div class="flex items-center space-x-3">
-                    <button id="open-search-button" class="p-2.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                        <i class="fas fa-search fa-fw"></i>
-                    </button>
-                    <button id="darkModeToggle" class="p-2.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                        <i class="fas fa-moon fa-fw dark:hidden"></i>
-                        <i class="fas fa-sun fa-fw hidden dark:block"></i>
-                    </button>
+            <header class="bg-gray-800 dark:bg-gray-900 text-white shadow-md sticky top-0 z-20">
+                <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zm0 14a3 3 0 110-6 3 3 0 010 6z"></path></svg>
+                         <h1 id="page-title" class="text-xl font-bold">Route 7 Bus Times</h1>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <!-- New Fetch Event Button -->
+                         <button id="header-fetch-event-btn" title="Suggest Bus for Next Event" disabled class="p-2 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                         </button>
+                         <button id="search-btn" title="Search Specific Time" class="p-2 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
+                              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                         </button>
+                         <button id="settings-btn" title="Settings" class="p-2 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </header>
 
             <!-- Main Content -->
             <main class="container mx-auto px-4 py-4 md:py-6">
                 <div class="flex flex-col md:flex-row gap-4 items-start">
-                    <!-- Main Controls -->
-                    <div class="w-full md:w-1/2">
+                    <!-- Main Controls (Left Column on Desktop) -->
+                    <div class="w-full md:w-1/2 flex flex-col gap-2">
                         <!-- Current Time -->
-                        <div class="text-center mb-2">
+                        <div class="text-center">
                             <span class="text-xs text-gray-500 dark:text-gray-400">Current Dubai Time (GMT+4):</span>
                             <div id="current-time" class="text-3xl font-bold text-gray-800 dark:text-gray-100">--:--:--</div>
                         </div>
 
-                        <!-- Google Calendar Integration -->
-                        <div id="calendar-controls" class="mb-2 p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
-                            <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">Calendar Event</h3>
-                            <div id="auth-status" class="text-sm text-gray-600 dark:text-gray-400 mb-2">Loading Google API...</div>
-                            <div class="flex gap-2 mb-2">
-                                <button id="authorize_button" disabled class="flex-1 px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">Sign In & Authorize</button>
-                                <button id="signout_button" class="flex-1 px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-md text-sm transition duration-150 ease-in-out">Sign Out</button>
-                            </div>
-                            <button id="fetch_event_button" disabled class="w-full px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">Suggest Bus for Next Event</button>
-                            <!-- Event Details & Target Time Display -->
-                            <div id="event-details" class="hidden mt-2 text-sm p-2 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
-                                <p id="event-summary-text" class="font-medium text-gray-800 dark:text-gray-100"></p>
-                                <p id="event-start-time-text" class="text-gray-600 dark:text-gray-300"></p>
-                                <p id="target-arrival-time-text" class="text-blue-600 dark:text-blue-400 font-semibold"></p>
-                            </div>
-                        </div>
-
                         <!-- Direction Selector -->
-                        <div id="direction-selector" class="mb-2 flex rounded-md shadow-sm" role="group">
+                        <div id="direction-selector" class="flex rounded-md shadow-sm" role="group">
                            <button type="button" data-direction="pzv2_to_hq" class="route-tab active px-4 py-2 text-sm font-medium text-primary-700 bg-primary-50 border border-gray-200 rounded-l-lg hover:bg-primary-100 focus:z-10 focus:ring-2 focus:ring-primary-500 focus:text-primary-700 dark:bg-primary-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-primary-600 dark:focus:ring-blue-500 dark:focus:text-white w-1/2">
                              PZV2 → HQ
                            </button>
@@ -181,53 +169,56 @@
 
                     </div>
 
-                    <!-- Output Area -->
-                    <div class="w-full md:w-1/2">
+                    <!-- Output Area (Right Column on Desktop) -->
+                    <div class="w-full md:w-1/2 flex flex-col gap-4">
                         <!-- Live Next Buses -->
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
                             <h3 class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-100">Next Departures</h3>
                             <div id="next-buses" class="space-y-3">
                                 <!-- Bus times will be injected here by JS -->
                                  <div class="text-gray-500 dark:text-gray-400 p-4">Loading schedule...</div>
                             </div>
-                            <!-- MOVED Full Schedule Button and Container INSIDE this card -->
+                            <!-- Full Schedule Button and Container INSIDE this card -->
                             <button id="toggle-schedule-btn" class="mt-4 w-full px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md transition duration-150 ease-in-out">Show Full Schedule</button>
                             <div id="full-schedule-container" class="hidden mt-3 border-t border-gray-200 dark:border-gray-600 pt-3 max-h-60 overflow-y-auto"></div>
-                        </div>
-
-                        <!-- Event-Based Search Results -->
-                        <div id="search-results-container" class="hidden bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-                            <h3 id="search-results-header" class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-100">Bus Suggestions</h3>
-                            <div id="search-results-list" class="space-y-3">
-                                <!-- Search results will appear here -->
-                            </div>
                         </div>
                     </div>
                 </div>
             </main>
 
-            <!-- Search Overlay (New) -->
-            <div id="search-overlay" 
-                 class="hidden fixed inset-0 bg-gray-100/80 dark:bg-gray-900/80 backdrop-blur-sm z-50 p-4 sm:p-6 lg:p-8 transition-opacity duration-300 ease-in-out" 
-                 style="animation: slideDownFadeIn 0.3s ease-out forwards;">
-                <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-xl mx-auto p-6 mt-10">
-                    <button id="close-search-button" class="absolute top-4 right-4 p-1 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
-                        <i class="fas fa-times fa-lg"></i>
-                    </button>
-                    <h2 class="text-lg uppercase font-semibold text-gray-900 dark:text-white mb-4">Find Bus Before Arrival Time</h2>
-                    <div class="flex flex-col sm:flex-row items-end gap-4">
-                        <div class="flex-grow w-full">
-                            <label for="arrival-time-search" class="block text-sm font-medium uppercase text-gray-700 dark:text-gray-300 mb-1">Desired Arrival Time:</label>
-                            <input type="time" id="arrival-time-search" name="arrival-time-search"
-                                   class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:text-white p-2">
-                        </div>
-                        <button id="search-button"
-                                class="inline-flex uppercase items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors w-full sm:w-auto">
-                            <i class="fas fa-search mr-2"></i> Search
-                        </button>
+            <!-- Search Overlay (Repurposed for Manual Search AND Event Display) -->
+            <div id="search-overlay" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-30 hidden transition-opacity duration-300 ease-in-out opacity-0">
+                <div id="search-content" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto transform transition-transform duration-300 ease-in-out scale-95">
+                    <!-- Header -->
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">
+                        <h2 id="overlay-title" class="text-xl font-semibold text-gray-900 dark:text-white">Find Bus / Event Suggestion</h2>
+                        <button id="close-search-overlay" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">&times;</button>
                     </div>
-                    <div id="search-results" class="mt-4 space-y-3">
-                        <!-- Search results will appear here -->
+
+                    <!-- Content Area (Dynamically Populated) -->
+                    <!-- Manual Search Section (hidden by default, shown by search icon click) -->
+                    <div id="manual-search-section">
+                        <label for="search-time" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Find bus arriving at HQ by:</label>
+                        <div class="flex gap-2 mb-3">
+                            <input type="time" id="search-time" name="search-time" required class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100">
+                            <button id="overlay-manual-search-btn" class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">Search</button>
+                        </div>
+                         <div id="manual-search-results-list" class="space-y-3">
+                            <!-- Manual search results injected here -->
+                         </div>
+                    </div>
+
+                    <!-- Event Suggestion Section (hidden by default, shown by header event button click) -->
+                    <div id="event-suggestion-section" class="hidden">
+                        <div class="mb-3 p-3 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 space-y-1">
+                             <p id="overlay-event-summary" class="font-medium text-gray-800 dark:text-gray-100"></p>
+                             <p id="overlay-event-start" class="text-sm text-gray-600 dark:text-gray-300"></p>
+                             <p id="overlay-target-arrival" class="text-sm text-blue-600 dark:text-blue-400 font-semibold"></p>
+                         </div>
+                         <h3 class="text-md font-semibold mb-2 text-gray-800 dark:text-gray-100">Suggested Buses:</h3>
+                         <div id="overlay-event-bus-list" class="space-y-3">
+                            <!-- Event bus suggestions injected here -->
+                         </div>
                     </div>
                 </div>
             </div>
