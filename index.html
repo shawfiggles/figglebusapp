@@ -56,6 +56,7 @@
         const CLIENT_ID = "498236670497-dmqp8caege8gld654l2059bncvvss808.apps.googleusercontent.com"; // Keep Client ID
         const API_KEY = "AIzaSyDET0MraeJhNg3KfwPCw-sVFxEZmS1Yov8"; // <-- REMOVED ACTUAL KEY - Replace with NEW, RESTRICTED key
         const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events.readonly";
+        const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"]; // Define Discovery Docs
         let tokenClient; // For handling authorization tokens
         let gapiInited = false;
         let gisInited = false;
@@ -944,12 +945,14 @@
 
         function initializeGapiClient() {
             console.log("initializeGapiClient called"); // DEBUG
-            gapi.client.init({/* discoveryDocs: [DISCOVERY_DOC] */}) // Removed API Key/Discovery Doc for simpler init if causing issues
+            gapi.client.init({
+                apiKey: API_KEY,
+                discoveryDocs: DISCOVERY_DOCS
+            })
                 .then(() => { 
-                    return gapi.client.load(DISCOVERY_DOC); // Load discovery doc separately
-                 }).then(() => {
+                    // Removed separate load - discovery docs are loaded during init with apiKey
                     gapiInited = true;
-                    console.log("GAPI client initialized and discovery doc loaded."); // DEBUG
+                    console.log("GAPI client initialized."); // Updated log
                     if (document.readyState === 'complete') {
                         console.log("GAPI ready, DOM complete, calling maybeEnableButtons"); // DEBUG
                         maybeEnableButtons(); 
@@ -1000,7 +1003,6 @@
             if(authStatusDiv) authStatusDiv.textContent = 'Signed in. Ready to Authorize API.'; 
             if (document.readyState === 'complete') {
                 maybeEnableButtons(); 
-                handleAuthClick(); // Try token immediately
             } // Otherwise wait for DOMContentLoaded
         }
 
