@@ -580,9 +580,20 @@
 
         // --- Function for Shortcuts App ---
         window.getNextBusInfoForShortcut = function() {
+            // First, check if the schedule data has been loaded and processed
+            if (typeof scheduleLoaded === 'undefined' || !scheduleLoaded) {
+                console.log("Shortcuts: Schedule not loaded yet.");
+                return { status: "loading", error: "Schedule data is not ready yet." };
+            }
+
             const nextBusEl = document.querySelector('#next-buses .ring-2'); // Find the highlighted next bus
             if (!nextBusEl) {
-                return { error: "Next bus information not available." };
+                // Schedule might be loaded, but maybe no buses are displayed (e.g., end of day)
+                console.log("Shortcuts: Next bus element not found.");
+                // Check if there's a message indicating no buses
+                const noBusesMsg = document.querySelector('#next-buses div'); 
+                const message = noBusesMsg ? noBusesMsg.textContent.trim() : "Next bus information not available.";
+                return { status: "unavailable", error: message };
             }
 
             try {
@@ -597,7 +608,9 @@
                 const arrivalTime = arrivalTimeMatch ? arrivalTimeMatch[1] : 'N/A';
                 const countdownText = countdownTextEl ? countdownTextEl.textContent.trim() : 'N/A';
 
+                console.log("Shortcuts: Successfully found bus info.");
                 return {
+                    status: "success", // Add a status field
                     departure: departureTime,
                     departureIsTomorrow: isTomorrow,
                     arrival: arrivalTime,
@@ -605,7 +618,7 @@
                 };
             } catch (e) {
                 console.error("Error in getNextBusInfoForShortcut:", e);
-                return { error: "Failed to parse bus information." };
+                return { status: "error", error: "Failed to parse bus information." };
             }
         }
 
