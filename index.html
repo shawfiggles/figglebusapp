@@ -120,6 +120,20 @@
                 transform: translateY(0);
             }
         }
+        #full-schedule-container {
+            transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
+            overflow: hidden; /* Ensure content clipped during transition */
+            /* DEBUG BORDER: */
+            /* border: 1px dashed red; */
+        }
+
+        #full-schedule-container:not(.expanded) {
+             max-height: 0;
+             opacity: 0;
+        }
+        
+         /* We might not need explicit expanded styles if toggling inline styles */
+         /* #full-schedule-container.expanded { ... } */
     </style>
 </head>
 <body class="h-full bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
@@ -850,14 +864,15 @@
         // Register service worker for PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('/figglebusapp/sw.js')
                     .then(registration => {
-                        console.log('ServiceWorker registration successful');
-                    })
-                    .catch(err => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    }).catch(err => {
                         console.log('ServiceWorker registration failed: ', err);
                     });
             });
+        } else {
+             console.log('Service Worker not supported in this browser.');
         }
 
         // --- DOM Elements Caching (declare vars here, assign in DOMContentLoaded) ---
@@ -924,7 +939,7 @@
                      console.error("Full schedule container not provided");
                      return;
                  }
-                 container.innerHTML = ''; // Clear existing content
+                 container.innerHTML = ''; // Ensure clearing happens first
                  if (!schedule || schedule.length === 0) {
                     container.innerHTML = `<div class="text-sm text-gray-500 dark:text-gray-400 p-2">No schedule data available.</div>`;
                     return;
@@ -1040,7 +1055,8 @@
         }
 
         function handleTokenResponse(resp) {
-             if (resp.error !== undefined) {
+            console.log("handleTokenResponse CALLED."); // DEBUG: Check if this is ever reached
+            if (resp.error !== undefined) {
                 console.error('Google Auth Error (Token Response):', resp);
                 // Update status/buttons ONLY if DOM elements exist
                 if(authStatusDiv) authStatusDiv.textContent = 'Authorization failed.';
@@ -1090,7 +1106,33 @@
              }
         }
 
-        // ... (handleAuthClick, handleSignoutClick, fetchNextCalendarEvent remain largely the same) ...
+        function handleAuthClick() {
+            console.log("handleAuthClick CALLED."); // DEBUG
+            if (!gisInited) {
+                console.error("GIS not initialized in handleAuthClick");
+                return;
+            }
+            
+            try {
+                if (gapi.client.getToken() === null) {
+                    if (userIsSignedIn) {
+                         console.log("Requesting access token SILENTLY (prompt: '')"); // DEBUG
+                         tokenClient.requestAccessToken({prompt: ''}); 
+                    } else {
+                         console.log("Requesting access token with CONSENT prompt"); // DEBUG
+                         tokenClient.requestAccessToken({prompt: 'consent'});
+                    }
+                } else {
+                     console.log("Token exists, requesting access token SILENTLY (refresh, prompt: '')"); // DEBUG
+                     tokenClient.requestAccessToken({prompt: ''}); 
+                }
+             } catch (error) {
+                 console.error("Error occurred INSIDE handleAuthClick when calling requestAccessToken:", error); // DEBUG
+                 if(authStatusDiv) authStatusDiv.textContent = 'Error requesting token.';
+             }
+        }
+
+        // ... handleSignoutClick, fetchNextCalendarEvent ...
 
     </script>
     <!-- Add onload callbacks for GAPI/GIS -->
