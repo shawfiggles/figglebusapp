@@ -1,10 +1,10 @@
-const CACHE_NAME = 'bus-times-v3';
+const CACHE_NAME = 'bus-times-v4';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/manifest.json',
-    '/route-7-eghq-pzv1-pzv2-eghq-eff-08-september.csv',
-    '/favicon.png',
+    '/figglebusapp/',
+    '/figglebusapp/index.html',
+    '/figglebusapp/manifest.json',
+    '/figglebusapp/route-7-eghq-pzv1-pzv2-eghq-eff-08-september.csv',
+    '/figglebusapp/favicon.png',
     'https://cdn.tailwindcss.com',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
     'https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap'
