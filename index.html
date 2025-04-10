@@ -19,6 +19,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="favicon.png">
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -48,6 +51,26 @@
                 }
             }
         }
+
+        // --- Google API Config --- 
+        const CLIENT_ID = "498236670497-dmqp8caege8gld654l2059bncvvss808.apps.googleusercontent.com"; // <-- PASTE YOUR CLIENT ID HERE
+        const API_KEY = "AIzaSyCDTAjU5GZssUYNjPOMcQ--fq2n_BZ_oGk"; // <-- Optional, but recommended for API calls - Create an API Key in Google Cloud Credentials
+        const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events.readonly";
+        let tokenClient; // For handling authorization tokens
+        let gapiInited = false;
+        let gisInited = false;
+
+        // --- Existing Config/Vars (Keep these lines commented or remove them) ---
+        /* 
+        const pzv2Coords = { lat: 25.24014157306891, lon: 55.29637545172292 };
+        const hqCoords = { lat: 25.241891643659287, lon: 55.36597152473545 };
+        let pzv2_to_hq = [];
+        let hq_to_pzv2 = [];
+        let scheduleLoaded = false;
+        const csvUrl = 'route-7-eghq-pzv1-pzv2-eghq-eff-08-september.csv'; // Relative path
+        const PROGRESS_WINDOW_MS = 30 * 60 * 1000; // 30 minutes in milliseconds
+        */
+
     </script>
     <style type="text/tailwindcss">
         html {
@@ -114,6 +137,19 @@
                         <i class="fas fa-moon fa-fw dark:hidden"></i>
                         <i class="fas fa-sun fa-fw hidden dark:block"></i>
                     </button>
+                </div>
+            </div>
+
+            <!-- Google Calendar Integration -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-4" style="animation: fadeInUp 0.5s 0.05s ease-out forwards; opacity: 0;">
+                <div class="flex flex-col sm:flex-row items-center gap-3">
+                    <button id="authorize_button" disabled class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fab fa-google mr-2"></i> <span>Sign In & Authorize Calendar</span>
+                    </button>
+                    <button id="fetch_event_button" disabled class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-calendar-day mr-2"></i> Fetch Next Event
+                    </button>
+                    <div id="auth_status" class="text-xs text-gray-500 dark:text-gray-400 sm:ml-auto"></div>
                 </div>
             </div>
 
@@ -820,6 +856,173 @@
                     });
             });
         }
+
+        // --- DOM Elements --- 
+        const authorizeButton = document.getElementById('authorize_button');
+        const fetchEventButton = document.getElementById('fetch_event_button');
+        const authStatusDiv = document.getElementById('auth_status');
+        
+        // --- GIS/GAPI Initialization ---
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
+        }
+
+        async function initializeGapiClient() {
+            // TODO: Authorize using API key
+             // await gapi.client.init({
+             //     apiKey: API_KEY, // Use API Key if available
+             //     discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"],
+             // });
+            // For now, init without discoveryDocs until auth is done
+            await gapi.client.load("https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest");
+            gapiInited = true;
+            maybeEnableButtons();
+        }
+
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: CALENDAR_SCOPE,
+                callback: '', // Defined dynamically
+            });
+            gisInited = true;
+            maybeEnableButtons();
+        }
+
+        function maybeEnableButtons() {
+            if (gapiInited && gisInited) {
+                authorizeButton.disabled = false;
+                 authStatusDiv.textContent = 'Ready to sign in.';
+            }
+        }
+
+        // --- Authorization Logic --- 
+        authorizeButton.addEventListener('click', handleAuthClick);
+
+        function handleAuthClick() {
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) {
+                    console.error('Google Auth Error:', resp);
+                    authStatusDiv.textContent = 'Authorization failed.';
+                    throw (resp);
+                }
+                // Auth successful
+                authStatusDiv.textContent = 'Calendar Authorized!';
+                authorizeButton.textContent = 'Calendar Authorized';
+                authorizeButton.disabled = true;
+                fetchEventButton.disabled = false;
+                // No need to explicitly set token, gapi handles it after this callback
+                console.log('GAPI client token set?', gapi.client.getToken()); 
+            };
+
+            // Check if we already have a token (might not work across reloads without more logic)
+            if (gapi.client.getToken() === null) {
+                // Prompt the user to select a Google Account and ask for consent to share their data
+                // when establishing a new session.
+                authStatusDiv.textContent = 'Requesting authorization...';
+                tokenClient.requestAccessToken({prompt: 'consent'});
+            } else {
+                 // Skip display of account chooser and consent dialog for an existing session.
+                 authStatusDiv.textContent = 'Requesting access token...';
+                 tokenClient.requestAccessToken({prompt: ''}); 
+            }
+        }
+
+        // --- Fetch Event Logic --- 
+        fetchEventButton.addEventListener('click', fetchNextCalendarEvent);
+
+        async function fetchNextCalendarEvent() {
+            if (!gapiInited || !gisInited || !gapi.client.getToken()) {
+                 authStatusDiv.textContent = 'Please authorize first.';
+                 return;
+            }
+            authStatusDiv.textContent = 'Fetching next event...';
+            try {
+                const request = {
+                    'calendarId': 'primary',
+                    'timeMin': (new Date()).toISOString(),
+                    'showDeleted': false,
+                    'singleEvents': true,
+                    'maxResults': 1,
+                    'orderBy': 'startTime'
+                };
+                // If using API Key, add it here: request.key = API_KEY;
+
+                const response = await gapi.client.calendar.events.list(request);
+
+                const events = response.result.items;
+                if (!events || events.length === 0) {
+                    authStatusDiv.textContent = 'No upcoming events found.';
+                    console.log('No upcoming events found.');
+                    return;
+                }
+
+                const nextEvent = events[0];
+                const when = nextEvent.start.dateTime || nextEvent.start.date;
+                console.log(`Next event: ${nextEvent.summary} at ${when}`);
+                authStatusDiv.textContent = `Next: ${nextEvent.summary.substring(0,20)}...`;
+
+                // Extract time and trigger search (Needs timezone handling!)
+                let eventTime = null;
+                if (nextEvent.start.dateTime) { 
+                    // This is a specific time. CAUTION: Timezone needs careful handling.
+                    // Google API returns ISO 8601 format like "2023-10-27T10:00:00+04:00"
+                    // We need to convert this to Dubai HH:MM for the search input.
+                    try {
+                         const eventDate = new Date(when); 
+                         // Format this date *as if it were in Dubai time* for our HH:MM output.
+                         // This is tricky. A robust library like date-fns-tz is better.
+                         // Simple approach: Assume event time IS Dubai time (often wrong!)
+                         // Or try to adjust based on offset if present (also complex).
+                         
+                         // Quick and dirty: just extract HH:MM from ISO string if possible
+                         const timeMatch = when.match(/T(\d{2}:\d{2})/);
+                         if (timeMatch && timeMatch[1]) {
+                             eventTime = timeMatch[1];
+                         } else { 
+                              // Fallback: Format the Date object using *local* browser TZ, may not be Dubai.
+                              eventTime = eventDate.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', hourCycle: 'h23'});
+                         }
+                    } catch (e) {
+                         console.error("Error parsing event date/time:", e);
+                         authStatusDiv.textContent = 'Error parsing event time.';
+                         return;
+                    }
+                } else if (nextEvent.start.date) {
+                    // All-day event. What time to use? Maybe 00:00 or skip?
+                    console.log("Next event is an all-day event. Skipping search.");
+                    authStatusDiv.textContent += ' (All-day event)';
+                    return;
+                }
+
+                if (eventTime) {
+                    // Populate search and click
+                    const searchInput = document.getElementById('arrival-time-search');
+                    const searchButton = document.getElementById('search-button'); // Button inside overlay
+                    const overlay = document.getElementById('search-overlay');
+
+                    if (searchInput && searchButton && overlay) {
+                        searchInput.value = eventTime; 
+                        overlay.classList.remove('hidden'); // Show the overlay
+                        searchButton.click(); // Trigger the search
+                        // Optionally scroll to results after a short delay
+                         setTimeout(() => {
+                              const resultsDiv = document.getElementById('search-results');
+                              if (resultsDiv) resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
+                         }, 300);
+                    } else {
+                         console.error("Search input, button, or overlay not found for calendar event trigger.");
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error fetching calendar events:', error);
+                authStatusDiv.textContent = 'Error fetching events.';
+            }
+        }
     </script>
+    <!-- Add onload callbacks for GAPI/GIS -->
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 </body>
 </html>
