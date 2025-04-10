@@ -189,12 +189,14 @@
         // --- Global State & Constants ---
         const pzv2Coords = { lat: 25.24014157306891, lon: 55.29637545172292 };
         const hqCoords = { lat: 25.241891643659287, lon: 55.36597152473545 };
-        const PROGRESS_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
-        const csvUrl = 'route-7-eghq-pzv1-pzv2-eghq-eff-08-september.csv';
+        const PROGRESS_WINDOW_MS = 5 * 60 * 1000; // 5 minutes for progress bar
+        const VAPID_PUBLIC_KEY = 'BJplK61gIO5OqlEnNki6sOaLRCOZ5e6jDjIqdPRxNZhgfzZjQ5Zho0Os0XOG62tBnM6oJi-q_gtMc8ERxwIlO_U'; // Your VAPID public key
         let pzv2_to_hq = [];
         let hq_to_pzv2 = [];
         let scheduleLoaded = false;
         let updateIntervalId = null; // To store the interval ID
+        let notificationPermissionStatus = 'default'; // 'default', 'granted', 'denied'
+        let isSubscribing = false;
 
         // --- DOM Elements --- 
         const currentTimeEl = document.getElementById('current-time');
@@ -254,6 +256,107 @@
                       Math.sin(dLon / 2) * Math.sin(dLon / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             return R * c;
+        }
+
+        // --- Push Notification Helpers ---
+
+        // Convert Base64 string to Uint8Array
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/\-/g, '+')
+                .replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        // Placeholder for sending subscription to backend
+        async function sendSubscriptionToBackend(subscription, departureTimeISO) {
+            console.log("Sending to backend (placeholder):", { subscription, departureTimeISO });
+            // TODO: Replace with actual fetch call to your Firebase Function
+            // Example:
+            // const response = await fetch('/api/subscribe', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({ subscription, departureTimeISO })
+            // });
+            // if (!response.ok) throw new Error('Backend subscription failed');
+            // return response.json();
+            
+            // Simulate backend success for now
+            await new Promise(resolve => setTimeout(resolve, 500)); 
+            return { success: true }; 
+        }
+
+        async function askPermissionAndSubscribe(departureTimeISO, buttonElement) {
+            if (isSubscribing) return;
+            isSubscribing = true;
+            if (buttonElement) buttonElement.disabled = true; // Disable button during process
+
+            try {
+                // 1. Check Permission Status
+                if (Notification.permission === 'granted') {
+                    notificationPermissionStatus = 'granted';
+                } else if (Notification.permission === 'denied') {
+                    notificationPermissionStatus = 'denied';
+                    alert("Notification permission denied. Please enable it in browser settings if you want notifications.");
+                    return;
+                } else {
+                    // Ask for permission
+                    const permissionResult = await Notification.requestPermission();
+                    notificationPermissionStatus = permissionResult;
+                    if (permissionResult !== 'granted') {
+                        alert("Notification permission not granted.");
+                        return;
+                    }
+                }
+
+                // 2. Get Service Worker Registration
+                const registration = await navigator.serviceWorker.ready;
+                console.log("Service Worker Ready:", registration);
+
+                // 3. Subscribe to Push Manager
+                console.log("Subscribing to Push Manager...");
+                let existingSubscription = await registration.pushManager.getSubscription();
+                
+                if (existingSubscription) {
+                     console.log("User IS already subscribed.");
+                } else {
+                    console.log("User is NOT subscribed. Subscribing now...");
+                     existingSubscription = await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                    });
+                    console.log("New Subscription obtained:", existingSubscription);
+                }
+                
+                // 4. Send Subscription to Backend
+                console.log("Sending subscription to backend...");
+                await sendSubscriptionToBackend(existingSubscription.toJSON(), departureTimeISO);
+                console.log("Subscription sent successfully.");
+                alert(`Notification set for bus departing at ${new Date(departureTimeISO).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}!`);
+                // Update button state (e.g., change icon, add class)
+                if (buttonElement) {
+                    buttonElement.innerHTML = '<i class="fas fa-bell text-green-500"></i>'; // Change to solid green bell
+                    buttonElement.title = "Notification set for this departure";
+                    // Ideally, you'd store this state more permanently
+                }
+
+            } catch (error) {
+                console.error("Failed to subscribe or send subscription:", error);
+                notificationPermissionStatus = Notification.permission; // Re-check actual permission on error
+                alert("Failed to set notification. See console for details.");
+            } finally {
+                isSubscribing = false;
+                // Re-enable button only if permission wasn't denied
+                if (buttonElement && notificationPermissionStatus !== 'denied') {
+                     buttonElement.disabled = false; 
+                }
+            }
         }
 
         // --- Core Logic ---
@@ -348,20 +451,36 @@
                 const countdown = bus.departTime - now;
                 const progress = isNext ? Math.max(0, Math.min(100, (countdown / PROGRESS_WINDOW_MS) * 100)) : 0;
                 const travelMinutes = calculateTravelTime(formatTime(bus.departTime), bus.arriveTime);
+                const departureISOString = bus.departTime.toISOString(); // Get ISO string for backend
                 
                 const busEntry = document.createElement('div');
-                busEntry.className = `relative overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 ${isNext ? 'ring-2 ring-primary-500 dark:bg-gray-700 dark:ring-primary-500' : 'dark:bg-gray-800'}`;
+                busEntry.className = `relative overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-3 ${isNext ? 'ring-2 ring-primary-500 dark:bg-gray-700 dark:ring-primary-500' : 'dark:bg-gray-800'}`;
                 
+                // Add a button for notifications
+                const notifyButtonHTML = `
+                    <button 
+                        class="notify-btn p-1 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                        data-departure-time="${departureISOString}" 
+                        title="Notify me before this departure"
+                        ${notificationPermissionStatus === 'denied' ? 'disabled' : ''}
+                        >
+                        <i class="far fa-bell"></i> ${/* Use fas fa-bell if already subscribed? Need state */ ''}
+                    </button>
+                `;
+
                 busEntry.innerHTML = `
-                    <div class="flex justify-between items-center mb-3">
+                    <div class="flex justify-between items-start mb-3">
                         <div class="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
                             <i class="far fa-clock mr-2 text-gray-500 dark:text-gray-400"></i>
                             <span>${formatTime(bus.departTime)}</span>
                             ${bus.isTomorrow ? '<span class="text-xs font-normal normal-case text-gray-500 dark:text-gray-400 ml-2 pt-1">(Tomorrow)</span>' : ''}
                         </div>
-                        <div class="text-sm uppercase text-gray-500 dark:text-gray-400 flex items-center">
-                            <i class="fas fa-flag-checkered mr-2"></i>
-                            Arrives: ${bus.arriveTime}
+                        <div class="flex items-center">
+                            <div class="text-sm uppercase text-gray-500 dark:text-gray-400 flex items-center mr-2">
+                                <i class="fas fa-flag-checkered mr-2"></i>
+                                Arrives: ${bus.arriveTime}
+                            </div>
+                             ${/* Insert notify button here */ notifyButtonHTML}
                         </div>
                     </div>
                     <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3 flex items-center">
@@ -535,6 +654,28 @@
                 }
             });
         });
+
+        // Add listener for notification buttons (using event delegation)
+        if (nextBusesContainer) {
+            nextBusesContainer.addEventListener('click', (event) => {
+                const notifyButton = event.target.closest('.notify-btn');
+                if (notifyButton) {
+                    const departureTimeISO = notifyButton.dataset.departureTime;
+                    if (departureTimeISO) {
+                        console.log(`Notify button clicked for departure: ${departureTimeISO}`);
+                        askPermissionAndSubscribe(departureTimeISO, notifyButton);
+                    } else {
+                         console.error("Notify button missing departure time data.");
+                    }
+                }
+            });
+        }
+
+        // Check initial permission status on load
+        if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
+             notificationPermissionStatus = Notification.permission;
+             console.log("Initial Notification Permission:", notificationPermissionStatus);
+        }
 
         // --- Initialisation --- 
         async function initializeApp() {

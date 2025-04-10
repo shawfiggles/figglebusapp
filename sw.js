@@ -83,4 +83,60 @@ self.addEventListener('fetch', event => {
                 });
             })
     );
+});
+
+// --- PUSH: Handle incoming push messages --- 
+self.addEventListener('push', event => {
+    console.log('SW: Push Received.');
+    console.log(`SW: Push data: "${event.data.text()}"`);
+
+    let title = 'Bus Reminder';
+    let options = {
+        body: 'Check your bus time!', // Default body
+        icon: 'favicon.png', // Optional: Use your app icon
+        badge: 'favicon.png'  // Optional: Icon for Android notification bar
+    };
+
+    try {
+        // Attempt to parse the incoming data as JSON
+        const pushData = event.data.json();
+        title = pushData.title || title;
+        options.body = pushData.body || options.body;
+        if (pushData.icon) options.icon = pushData.icon;
+        // Add other options if needed: actions, image, etc.
+        console.log('SW: Parsed push data:', { title, options });
+    } catch (e) {
+        // If data is not JSON or parsing fails, use the raw text
+        console.log('SW: Push data not JSON, using raw text.');
+        options.body = event.data.text();
+    }
+
+    // Keep the service worker alive until the notification is shown
+    event.waitUntil(
+        self.registration.showNotification(title, options)
+    );
+});
+
+// Optional: Handle notification click
+self.addEventListener('notificationclick', event => {
+    console.log('SW: Notification click Received.');
+    event.notification.close(); // Close the notification
+
+    // Focus or open the app window
+    event.waitUntil(
+        clients.matchAll({
+            type: "window"
+        }).then(clientList => {
+            for (const client of clientList) {
+                // Check if a window/tab matching your app is already open
+                if (client.url === '/' && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            // If no window is open, open a new one
+            if (clients.openWindow) {
+                return clients.openWindow('/'); // Opens your app's root page
+            }
+        })
+    );
 }); 
