@@ -141,69 +141,70 @@
                 </div>
             </div>
 
-            <!-- Google Calendar Integration -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-4" style="animation: fadeInUp 0.5s 0.05s ease-out forwards; opacity: 0;">
-                <div class="flex flex-col sm:flex-row items-center gap-3">
-                    <button id="authorize_button" disabled class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fab fa-google mr-2"></i> <span>Sign In & Authorize Calendar</span>
-                    </button>
-                    <button id="fetch_event_button" disabled class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fas fa-calendar-day mr-2"></i> Fetch Next Event
-                    </button>
-                    <div id="auth_status" class="text-xs text-gray-500 dark:text-gray-400 sm:ml-auto"></div>
-                </div>
-            </div>
+            <!-- Main Content -->
+            <main class="container mx-auto px-4 py-4 md:py-6">
+                <div class="flex flex-col md:flex-row gap-4 items-start">
+                    <!-- Main Controls -->
+                    <div class="w-full md:w-1/2">
+                        <!-- Current Time -->
+                        <div class="text-center mb-2">
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Current Dubai Time (GMT+4):</span>
+                            <div id="current-time" class="text-3xl font-bold text-gray-800 dark:text-gray-100">--:--:--</div>
+                        </div>
 
-            <!-- Current Time -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-5" style="animation: fadeInUp 0.5s 0.1s ease-out forwards; opacity: 0;">
-                <div class="text-center">
-                    <div class="text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400">Current Time (Dubai)</div>
-                    <div id="current-time" class="text-3xl font-semibold text-gray-900 dark:text-white mt-1"></div>
-                </div>
-            </div>
+                        <!-- Google Calendar Integration -->
+                        <div id="calendar-controls" class="mb-2 p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
+                            <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">Calendar Event</h3>
+                            <div id="auth-status" class="text-sm text-gray-600 dark:text-gray-400 mb-2">Loading Google API...</div>
+                            <div class="flex gap-2 mb-2">
+                                <button id="authorize_button" disabled class="flex-1 px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">Sign In & Authorize</button>
+                                <button id="signout_button" class="flex-1 px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-md text-sm transition duration-150 ease-in-out">Sign Out</button>
+                            </div>
+                            <button id="fetch_event_button" disabled class="w-full px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">Suggest Bus for Next Event</button>
+                            <!-- Event Details & Target Time Display -->
+                            <div id="event-details" class="hidden mt-2 text-sm p-2 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                                <p id="event-summary-text" class="font-medium text-gray-800 dark:text-gray-100"></p>
+                                <p id="event-start-time-text" class="text-gray-600 dark:text-gray-300"></p>
+                                <p id="target-arrival-time-text" class="text-blue-600 dark:text-blue-400 font-semibold"></p>
+                            </div>
+                        </div>
 
-            <!-- Direction Controls -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-4" style="animation: fadeInUp 0.5s 0.2s ease-out forwards; opacity: 0;">
-                <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div class="flex w-full sm:w-auto">
-                        <div class="flex rounded-md shadow-sm w-full sm:w-auto" role="group">
-                            <button type="button" 
-                                class="route-tab active uppercase px-4 py-2.5 text-sm font-medium rounded-l-md border border-gray-200 dark:border-gray-700 bg-primary-50 dark:bg-primary-700 text-primary-700 dark:text-white hover:bg-primary-100 dark:hover:bg-primary-600 focus:z-10 focus:ring-2 focus:ring-primary-500"
-                                data-direction="pzv2_to_hq">
-                                <i class="fas fa-bus mr-2"></i>PZV2 → HQ
-                            </button>
-                            <button type="button" 
-                                class="route-tab uppercase px-4 py-2.5 text-sm font-medium rounded-r-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-10 focus:ring-2 focus:ring-primary-500"
-                                data-direction="hq_to_pzv2">
-                                <i class="fas fa-bus mr-2"></i>HQ → PZV2
-                            </button>
+                        <!-- Direction Selector -->
+                        <div id="direction-selector" class="mb-2 flex rounded-md shadow-sm" role="group">
+                           <button type="button" data-direction="pzv2_to_hq" class="route-tab active px-4 py-2 text-sm font-medium text-primary-700 bg-primary-50 border border-gray-200 rounded-l-lg hover:bg-primary-100 focus:z-10 focus:ring-2 focus:ring-primary-500 focus:text-primary-700 dark:bg-primary-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-primary-600 dark:focus:ring-blue-500 dark:focus:text-white w-1/2">
+                             PZV2 → HQ
+                           </button>
+                           <button type="button" data-direction="hq_to_pzv2" class="route-tab px-4 py-2 text-sm font-medium text-gray-700 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-2 focus:ring-primary-500 focus:text-primary-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white w-1/2 rounded-r-md">
+                             HQ → PZV2
+                           </button>
+                        </div>
+
+                    </div>
+
+                    <!-- Output Area -->
+                    <div class="w-full md:w-1/2">
+                        <!-- Live Next Buses -->
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
+                            <h3 class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-100">Next Departures</h3>
+                            <div id="next-buses" class="space-y-3">
+                                <!-- Bus times will be injected here by JS -->
+                                 <div class="text-gray-500 dark:text-gray-400 p-4">Loading schedule...</div>
+                            </div>
+                            <!-- MOVED Full Schedule Button and Container INSIDE this card -->
+                            <button id="toggle-schedule-btn" class="mt-4 w-full px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md transition duration-150 ease-in-out">Show Full Schedule</button>
+                            <div id="full-schedule-container" class="hidden mt-3 border-t border-gray-200 dark:border-gray-600 pt-3 max-h-60 overflow-y-auto"></div>
+                        </div>
+
+                        <!-- Event-Based Search Results -->
+                        <div id="search-results-container" class="hidden bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+                            <h3 id="search-results-header" class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-100">Bus Suggestions</h3>
+                            <div id="search-results-list" class="space-y-3">
+                                <!-- Search results will appear here -->
+                            </div>
                         </div>
                     </div>
-                    <button id="toggleSchedule"
-                        class="inline-flex uppercase items-center px-4 py-2.5 border border-transparent text-xs font-semibold tracking-wider rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors w-full sm:w-auto">
-                        <i class="fas fa-calendar-alt mr-2"></i>
-                        <span>Show Full Schedule</span>
-                    </button>
                 </div>
-            </div>
-
-            <!-- Next Buses -->
-            <div class="mb-5" style="animation: fadeInUp 0.5s 0.3s ease-out forwards; opacity: 0;">
-                <h2 class="text-lg uppercase font-semibold tracking-wider text-gray-900 dark:text-white mb-4">Next Departures</h2>
-                <div id="next-buses" class="space-y-3 sm:space-y-4">
-                    <!-- Bus entries will be inserted here -->
-                </div>
-            </div>
-
-            <!-- Full Schedule -->
-            <div id="full-schedule" class="opacity-0 transition-all duration-500 ease-in-out max-h-0 overflow-hidden scroll-mt-4">
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Full Schedule</h2>
-                    <div id="schedule-list" class="space-y-2">
-                        <!-- Schedule entries will be inserted here -->
-                    </div>
-                </div>
-            </div>
+            </main>
 
             <!-- Search Overlay (New) -->
             <div id="search-overlay" 
@@ -723,17 +724,17 @@
         }
 
         // Toggle full schedule (needs scheduleLoaded check)
-        document.getElementById('toggleSchedule').addEventListener('click', function() {
+        document.getElementById('toggle-schedule-btn').addEventListener('click', function() {
             if (!scheduleLoaded) return; // Don't toggle if schedule not loaded
-            const fullSchedule = document.getElementById('full-schedule');
+            const fullScheduleContainer = document.getElementById('full-schedule-container');
             const button = this;
             const scheduleList = document.getElementById('schedule-list'); // Need list to populate
             const buttonSpan = button.querySelector('span'); // Get the span for text update
             
-            if (fullSchedule.style.maxHeight && fullSchedule.style.maxHeight !== '0px') { // Check if currently expanded
+            if (fullScheduleContainer.style.maxHeight && fullScheduleContainer.style.maxHeight !== '0px') { // Check if currently expanded
                 // Collapse
-                fullSchedule.style.maxHeight = '0px';
-                fullSchedule.style.opacity = '0';
+                fullScheduleContainer.style.maxHeight = '0px';
+                fullScheduleContainer.style.opacity = '0';
                 if (buttonSpan) buttonSpan.textContent = 'Show Full Schedule'; 
                 button.querySelector('i').classList.replace('fa-calendar-times', 'fa-calendar-alt'); // Change icon
             } else {
@@ -774,14 +775,14 @@
                     scheduleList.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">Schedule data not available.</p>';
                  }
                 
-                fullSchedule.style.opacity = '1';
-                fullSchedule.style.maxHeight = fullSchedule.scrollHeight + "px"; 
+                fullScheduleContainer.style.opacity = '1';
+                fullScheduleContainer.style.maxHeight = fullScheduleContainer.scrollHeight + "px"; 
                 if (buttonSpan) buttonSpan.textContent = 'Hide Full Schedule';
                 button.querySelector('i').classList.replace('fa-calendar-alt', 'fa-calendar-times'); // Change icon
 
                 // Scroll to the full schedule section smoothly, aligning top
                 setTimeout(() => {
-                    fullSchedule.scrollIntoView({ behavior: 'smooth', block: 'start' }); // Changed block to 'start'
+                    fullScheduleContainer.scrollIntoView({ behavior: 'smooth', block: 'start' }); // Changed block to 'start'
                 }, 100); 
             }
         });
@@ -807,12 +808,12 @@
                 updateDisplay(); 
                 
                 // If full schedule is visible, collapse it using animation
-                const fullSchedule = document.getElementById('full-schedule');
-                const toggleButton = document.getElementById('toggleSchedule');
+                const fullScheduleContainer = document.getElementById('full-schedule-container');
+                const toggleButton = document.getElementById('toggle-schedule-btn');
                 // Check if it's currently expanded (maxHeight is not 0px)
-                if (fullSchedule.style.maxHeight && fullSchedule.style.maxHeight !== '0px') { 
-                    fullSchedule.style.maxHeight = '0px'; // Collapse it
-                    fullSchedule.style.opacity = '0';
+                if (fullScheduleContainer.style.maxHeight && fullScheduleContainer.style.maxHeight !== '0px') { 
+                    fullScheduleContainer.style.maxHeight = '0px'; // Collapse it
+                    fullScheduleContainer.style.opacity = '0';
                     toggleButton.querySelector('i').classList.replace('fa-calendar-times', 'fa-calendar-alt');
                     toggleButton.querySelector('span').textContent = 'Show Full Schedule'; // Reset button text
                 }
