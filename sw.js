@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bus-times-v2';
+const CACHE_NAME = 'bus-times-v3';
 const urlsToCache = [
     '/',
     '/index.html',
