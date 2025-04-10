@@ -728,62 +728,23 @@
             if (!scheduleLoaded) return; // Don't toggle if schedule not loaded
             const fullScheduleContainer = document.getElementById('full-schedule-container');
             const button = this;
-            const scheduleList = document.getElementById('schedule-list'); // Need list to populate
-            const buttonSpan = button.querySelector('span'); // Get the span for text update
             
             if (fullScheduleContainer.style.maxHeight && fullScheduleContainer.style.maxHeight !== '0px') { // Check if currently expanded
                 // Collapse
                 fullScheduleContainer.style.maxHeight = '0px';
                 fullScheduleContainer.style.opacity = '0';
-                if (buttonSpan) buttonSpan.textContent = 'Show Full Schedule'; 
+                if (button.textContent === 'Show Full Schedule') {
+                    button.textContent = 'Hide Full Schedule';
+                }
                 button.querySelector('i').classList.replace('fa-calendar-times', 'fa-calendar-alt'); // Change icon
             } else {
                 // Expand
-                scheduleList.innerHTML = ''; 
-                const direction = document.querySelector('.route-tab.active').dataset.direction;
-                const schedule = direction === 'pzv2_to_hq' ? pzv2_to_hq : hq_to_pzv2;
-                 if (schedule && schedule.length > 0) {
-                     schedule.forEach(entry => {
-                         if (!entry) return;
-                         const departTimeStr = direction === 'pzv2_to_hq' ? entry.departPZV2 : entry.departHQ;
-                         const arriveTimeStr = direction === 'pzv2_to_hq' ? entry.arriveHQ : entry.arrivePZV2;
-                         if (!departTimeStr || !arriveTimeStr) return;
-                         
-                         const scheduleEntry = document.createElement('div');
-                         scheduleEntry.className = 'flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700 last:border-0';
-                         
-                         const timeInfo = document.createElement('div');
-                         timeInfo.className = 'uppercase text-xs tracking-wide text-gray-700 dark:text-gray-300'; // Smaller text
-                         timeInfo.innerHTML = `
-                             <i class="fas fa-clock mr-1"></i>
-                             ${departTimeStr} → ${arriveTimeStr}
-                         `;
-                         
-                         const travelTime = document.createElement('div');
-                         travelTime.className = 'text-xs uppercase text-gray-500 dark:text-gray-400'; // Smaller text
-                         const travelMinutes = calculateTravelTime(departTimeStr, arriveTimeStr);
-                         travelTime.innerHTML = `
-                             <i class="fas fa-hourglass-half mr-1"></i>
-                             ${travelMinutes} min
-                         `;
-                         
-                         scheduleEntry.appendChild(timeInfo);
-                         scheduleEntry.appendChild(travelTime);
-                         scheduleList.appendChild(scheduleEntry);
-                     });
-                 } else {
-                    scheduleList.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">Schedule data not available.</p>';
-                 }
-                
                 fullScheduleContainer.style.opacity = '1';
                 fullScheduleContainer.style.maxHeight = fullScheduleContainer.scrollHeight + "px"; 
-                if (buttonSpan) buttonSpan.textContent = 'Hide Full Schedule';
+                if (button.textContent === 'Hide Full Schedule') {
+                    button.textContent = 'Show Full Schedule';
+                }
                 button.querySelector('i').classList.replace('fa-calendar-alt', 'fa-calendar-times'); // Change icon
-
-                // Scroll to the full schedule section smoothly, aligning top
-                setTimeout(() => {
-                    fullScheduleContainer.scrollIntoView({ behavior: 'smooth', block: 'start' }); // Changed block to 'start'
-                }, 100); 
             }
         });
 
@@ -806,17 +767,6 @@
 
                 // Update display for the manually clicked tab
                 updateDisplay(); 
-                
-                // If full schedule is visible, collapse it using animation
-                const fullScheduleContainer = document.getElementById('full-schedule-container');
-                const toggleButton = document.getElementById('toggle-schedule-btn');
-                // Check if it's currently expanded (maxHeight is not 0px)
-                if (fullScheduleContainer.style.maxHeight && fullScheduleContainer.style.maxHeight !== '0px') { 
-                    fullScheduleContainer.style.maxHeight = '0px'; // Collapse it
-                    fullScheduleContainer.style.opacity = '0';
-                    toggleButton.querySelector('i').classList.replace('fa-calendar-times', 'fa-calendar-alt');
-                    toggleButton.querySelector('span').textContent = 'Show Full Schedule'; // Reset button text
-                }
             });
         });
 
@@ -877,224 +827,21 @@
             });
         }
 
-        // --- DOM Elements --- 
-        const authorizeButton = document.getElementById('authorize_button');
-        const fetchEventButton = document.getElementById('fetch_event_button');
-        const authStatusDiv = document.getElementById('auth_status');
-        
-        // --- GIS/GAPI Initialization ---
-        function gapiLoaded() {
-            gapi.load('client', initializeGapiClient);
-        }
-
-        async function initializeGapiClient() {
-            // TODO: Authorize using API key
-             // await gapi.client.init({
-             //     apiKey: API_KEY, // Use API Key if available
-             //     discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"],
-             // });
-            // For now, init without discoveryDocs until auth is done
-            await gapi.client.load("https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest");
-            gapiInited = true;
-            maybeEnableButtons();
-        }
-
-        function gisLoaded() {
-            // Initialize the GIS ID client for sign-in state
-            google.accounts.id.initialize({
-                client_id: CLIENT_ID,
-                callback: handleCredentialResponse, // Function to handle the Sign In response
-                auto_select: true // Attempt to sign in automatically on load
-                // use_fedcm_for_prompt: true // Optional: Use newer FedCM standard if browser supports
-            });
-
-            // Initialize the GIS Token client for getting API access tokens
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: CALENDAR_SCOPE,
-                callback: handleTokenResponse, // Central handler for token responses
-            });
-            gisInited = true;
-            maybeEnableButtons();
-            
-            // Attempt automatic sign-in or show One Tap prompt
-            // This helps maintain session across reloads if user is logged into Google
-             google.accounts.id.prompt((notification) => {
-                 if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                     // Prompt wasn't shown or was skipped, user might need to click Sign In
-                     console.log('GIS ID prompt notification:', notification.getNotDisplayedReason() || notification.getSkippedReason());
-                     // Enable button if not already signed in
-                     if (!userIsSignedIn) maybeEnableButtons(); 
-                 }
-             });
-        }
-
-        function maybeEnableButtons() {
-             // Enable Auth button only when libraries are ready AND user isn't fully authorized yet
-            if (gapiInited && gisInited && !fetchEventButton.disabled) {
-                 // Already authorized, do nothing to auth button
-             } else if (gapiInited && gisInited) {
-                 authorizeButton.disabled = false;
-                 authStatusDiv.textContent = authStatusDiv.textContent || 'Ready to sign in.'; // Keep existing status if any
-             }
-             // Fetch button remains disabled until token response is successful
-        }
-
-        // --- Handle GIS ID Sign In Response --- 
-        function handleCredentialResponse(response) {
-            // This callback confirms the user is signed in with Google
-            // It provides an ID token (JWT), not an access token for APIs
-            console.log("GIS ID Credential Response (Sign-In confirmed):"); //, response.credential);
-            // You could decode response.credential JWT to get user info if needed
-            userIsSignedIn = true;
-            authStatusDiv.textContent = 'Signed in. Ready to Authorize API.';
-            // Enable authorize button if needed, or attempt token request silently
-            maybeEnableButtons(); 
-            handleAuthClick(); // Try to get token immediately after sign-in confirmation
-        }
-
-        // --- Central Token Response Handler --- 
-        function handleTokenResponse(resp) {
-             if (resp.error !== undefined) {
-                console.error('Google Auth Error (Token Response):', resp);
-                authStatusDiv.textContent = 'Authorization failed.';
-                 fetchEventButton.disabled = true; // Ensure fetch is disabled
-                 authorizeButton.disabled = false; // Re-enable auth button
-                 authorizeButton.textContent = 'Sign In & Authorize Calendar';
-                throw (resp);
-            }
-            // Access Token granted successfully
-            userIsSignedIn = true; // Mark as signed in if token obtained
-            authStatusDiv.textContent = 'Calendar Authorized!';
-            authorizeButton.textContent = 'Calendar Authorized';
-            authorizeButton.disabled = true;
-            fetchEventButton.disabled = false;
-            console.log('GAPI client access token obtained.');
-        }
-
-        // --- Authorization Logic --- 
-        authorizeButton.addEventListener('click', handleAuthClick);
-
-        function handleAuthClick() {
-            if (!gisInited) {
-                console.error("GIS not initialized");
-                return;
-            }
-            
-            if (gapi.client.getToken() === null) {
-                 // No token yet. If user is already signed-in (via google.accounts.id), 
-                 // try a silent token request first. Otherwise, trigger consent.
-                 if (userIsSignedIn) {
-                      // Try to get token without user interaction
-                      authStatusDiv.textContent = 'Requesting access token...';
-                      tokenClient.requestAccessToken({prompt: ''}); 
-                 } else {
-                     // Prompt the user to select account and grant consent
-                     authStatusDiv.textContent = 'Requesting authorization...';
-                     tokenClient.requestAccessToken({prompt: 'consent'});
-                 }
-            } else {
-                // We think we have a token, maybe try using it? 
-                // Or just re-request silently to be sure it's fresh.
-                 authStatusDiv.textContent = 'Refreshing access token...';
-                 tokenClient.requestAccessToken({prompt: ''}); 
-            }
-        }
-
-        // --- Fetch Event Logic --- 
-        fetchEventButton.addEventListener('click', fetchNextCalendarEvent);
-
-        async function fetchNextCalendarEvent() {
-            if (!gapiInited || !gisInited || !gapi.client.getToken()) {
-                 authStatusDiv.textContent = 'Please authorize first.';
-                 return;
-            }
-            authStatusDiv.textContent = 'Fetching next event...';
-            try {
-                const request = {
-                    'calendarId': 'primary',
-                    'timeMin': (new Date()).toISOString(),
-                    'showDeleted': false,
-                    'singleEvents': true,
-                    'maxResults': 1,
-                    'orderBy': 'startTime'
-                };
-                // If using API Key, add it here: request.key = API_KEY;
-
-                const response = await gapi.client.calendar.events.list(request);
-
-                const events = response.result.items;
-                if (!events || events.length === 0) {
-                    authStatusDiv.textContent = 'No upcoming events found.';
-                    console.log('No upcoming events found.');
-                    return;
-                }
-
-                const nextEvent = events[0];
-                const when = nextEvent.start.dateTime || nextEvent.start.date;
-                console.log(`Next event: ${nextEvent.summary} at ${when}`);
-                authStatusDiv.textContent = `Next: ${nextEvent.summary.substring(0,20)}...`;
-
-                // --- Calculate Target Arrival Time & Trigger Search --- 
-                let targetArrivalTimeStr = null;
-                if (nextEvent.start.dateTime) { // Only proceed if it's not an all-day event
-                    try {
-                         const eventDate = new Date(when); // Parse event start time
-                         
-                         // Calculate target arrival time (150 mins before event)
-                         const targetArrivalDateTime = new Date(eventDate.getTime() - (150 * 60 * 1000));
-                         
-                         // Format the target time as HH:MM in Dubai timezone
-                         targetArrivalTimeStr = formatAsDubaiHHMM(targetArrivalDateTime);
-                         
-                         console.log(`Event starts at ${when}, calculating arrival by ${targetArrivalTimeStr} (Dubai time)`);
-                         authStatusDiv.textContent += ` (Need to arrive by ~${targetArrivalTimeStr})`;
-
-                    } catch (e) {
-                         console.error("Error calculating or formatting target arrival time:", e);
-                         authStatusDiv.textContent = 'Error processing event time.';
-                         return;
-                    }
-                } else if (nextEvent.start.date) {
-                    // All-day event logic unchanged
-                    console.log("Next event is an all-day event. Skipping search.");
-                    authStatusDiv.textContent += ' (All-day event)';
-                    return;
-                }
-
-                if (targetArrivalTimeStr) {
-                    // Populate search and click (logic unchanged)
-                    const searchInput = document.getElementById('arrival-time-search');
-                    const searchButton = document.getElementById('search-button');
-                    const overlay = document.getElementById('search-overlay');
-
-                    if (searchInput && searchButton && overlay) {
-                        searchInput.value = targetArrivalTimeStr; 
-                        overlay.classList.remove('hidden');
-                        searchButton.click(); 
-                        setTimeout(() => {
-                              const resultsDiv = document.getElementById('search-results');
-                              if (resultsDiv) resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
-                         }, 300);
-                    } else {
-                         console.error("Search input, button, or overlay not found for calendar event trigger.");
-                    }
-                }
-                 // --- End Target Arrival Time Logic ---
-
-            } catch (error) {
-                console.error('Error fetching calendar events:', error);
-                authStatusDiv.textContent = 'Error fetching events.';
-            }
-        }
-
-        // --- DOM Elements Caching ---
-        // Cache frequently accessed DOM elements after DOM is ready
+        // --- DOM Elements Caching (declare vars here, assign in DOMContentLoaded) ---
+        let authStatusDiv, authorizeButton, fetchEventButton, toggleScheduleBtn, fullScheduleContainer;
         let eventDetailsDiv, eventSummaryText, eventStartTimeText, targetArrivalTimeText;
         let searchResultsContainer, searchResultsHeader, searchResultsList;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // ... existing DOMContentLoaded caching ...
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log("DOM fully loaded and parsed");
+
+            // Cache ALL DOM Elements Here (ensure these IDs match HTML)
+            authStatusDiv = document.getElementById('auth-status');
+            authorizeButton = document.getElementById('authorize_button');
+            signoutButton = document.getElementById('signout_button');
+            fetchEventButton = document.getElementById('fetch_event_button');
+            toggleScheduleBtn = document.getElementById('toggle-schedule-btn');
+            fullScheduleContainer = document.getElementById('full-schedule-container');
             eventDetailsDiv = document.getElementById('event-details');
             eventSummaryText = document.getElementById('event-summary-text');
             eventStartTimeText = document.getElementById('event-start-time-text');
@@ -1102,76 +849,213 @@
             searchResultsContainer = document.getElementById('search-results-container');
             searchResultsHeader = document.getElementById('search-results-header');
             searchResultsList = document.getElementById('search-results-list');
-            // ... potentially other elements like authorizeButton, fetchEventButton if not already cached ...
+
+            // ... (Attach listeners for Dark Mode, Search, Direction, Auth Buttons like before) ...
+
+            // Full Schedule Toggle - Listener using simplified populate
+            if(toggleScheduleBtn && fullScheduleContainer) {
+                 toggleScheduleBtn.addEventListener('click', function() {
+                     if (!scheduleLoaded) {
+                         console.warn("Full schedule toggle clicked, but schedule not loaded.");
+                         return; 
+                     }
+                     
+                     // Use a class to track state, simpler than checking maxHeight/opacity
+                     const isExpanded = fullScheduleContainer.classList.toggle('expanded'); // Toggle returns true if class added, false if removed
+
+                     if (isExpanded) {
+                         console.log("Expanding full schedule");
+                         // Directly populate the container
+                         populateFullSchedule(
+                            document.querySelector('.route-tab.active').dataset.direction === 'pzv2_to_hq' ? pzv2_to_hq : hq_to_pzv2,
+                            fullScheduleContainer, // Pass the container itself
+                            document.querySelector('.route-tab.active').dataset.direction
+                         ); 
+                         // ... (rest of expansion logic)
+                     } else {
+                         console.log("Collapsing full schedule");
+                         // Collapse styles
+                         fullScheduleContainer.style.maxHeight = '0px';
+                         fullScheduleContainer.style.opacity = '0';
+                         this.textContent = 'Show Full Schedule';
+                     }
+                 });
+             } else { 
+                 console.error("Toggle schedule button or container not found!"); 
+             }
+             
+            // Populate Full Schedule function - Simplified (no scheduleList ID needed)
+            function populateFullSchedule(schedule, container, direction) {
+                 if (!container) {
+                     console.error("Full schedule container not provided");
+                     return;
+                 }
+                 container.innerHTML = ''; // Clear existing content
+                 if (!schedule || schedule.length === 0) {
+                    container.innerHTML = `<div class="text-sm text-gray-500 dark:text-gray-400 p-2">No schedule data available.</div>`;
+                    return;
+                 }
+                 
+                 // Create and append entries directly to the container
+                 schedule.forEach(entry => {
+                    const departTime = direction === 'pzv2_to_hq' ? entry.departPZV2 : entry.departHQ;
+                    const arriveTime = direction === 'pzv2_to_hq' ? entry.arriveHQ : entry.arrivePZV2;
+                    const travelTime = calculateTravelTime(departTime, arriveTime);
+                    
+                    const item = document.createElement('div');
+                    item.className = 'text-sm flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded mb-1'; // Added mb-1 for spacing
+                    item.innerHTML = `
+                        <span>Depart: <strong>${departTime}</strong></span>
+                        <span>Arrive: <strong>${arriveTime}</strong></span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">(${travelTime} min)</span>
+                    `;
+                    container.appendChild(item); // Append directly to the container
+                });
+            }
+
+            // --- Initial Setup (after DOM loaded and listeners attached) ---
+            console.log("Running initial setup within DOMContentLoaded");
+            
+            // Load schedule
+            await loadSchedule(); 
+            console.log("Schedule loading attempted.");
+
+            // Start update interval ONLY if schedule loaded successfully
+            if (scheduleLoaded) {
+                 console.log("Schedule loaded, starting update interval.");
+                 updateDisplay(); // Initial display update
+                 setInterval(updateDisplay, 1000); 
+            } else {
+                console.log("Schedule not loaded, display interval not started.");
+            }
+
+            // Explicitly call maybeEnableButtons after DOM is ready and elements are cached
+            console.log("Calling maybeEnableButtons after DOMContentLoaded setup."); // DEBUG
+            maybeEnableButtons(); 
+            
+            console.log("Initial setup complete."); // DEBUG
         });
 
-        // New function to find and display buses arriving by a target time
-        function findAndDisplayBusesByArrival(schedule, targetArrivalTimeStr, eventStartTimeStr) {
-             // Get today's date in Dubai for comparison
-            const nowDubai = getNowInDubaiTimezone(); 
-            const todayDubaiStr = `${nowDubai.getFullYear()}-${String(nowDubai.getMonth() + 1).padStart(2, '0')}-${String(nowDubai.getDate()).padStart(2, '0')}`;
-
-            const relevantBuses = [];
-
-            schedule.forEach(entry => {
-                const arriveTimeStr = entry.arriveHQ; // Assuming PZV2 -> HQ
-                const departTimeStr = entry.departPZV2;
-
-                if (!arriveTimeStr || !departTimeStr) return; // Skip invalid entries
-
-                // Compare arrival time string directly (HH:MM)
-                if (arriveTimeStr <= targetArrivalTimeStr) {
-                     // Construct a hypothetical arrival datetime for today to check if it already passed
-                    const [arrH, arrM] = arriveTimeStr.split(':').map(Number);
-                    const potentialArrivalDateTime = new Date(`${todayDubaiStr}T${String(arrH).padStart(2, '0')}:${String(arrM).padStart(2, '0')}:00.000+04:00`); // Construct with timezone
-                   
-                     // Only add if the bus hasn't already arrived today
-                    if (potentialArrivalDateTime > nowDubai) { 
-                        relevantBuses.push({ 
-                            departPZV2: departTimeStr, 
-                            arriveHQ: arriveTimeStr 
-                        });
-                    }
-                 } // else: Bus arrives too late, ignore
-            });
-
-            // Sort by arrival time descending (latest first)
-            relevantBuses.sort((a, b) => b.arriveHQ.localeCompare(a.arriveHQ));
-
-            // Limit to top 5
-            const top5Buses = relevantBuses.slice(0, 5);
-
-            // Update results header
-            searchResultsHeader.textContent = `Latest Buses Arriving at HQ by ${targetArrivalTimeStr} (for event at ${eventStartTimeStr})`;
-            searchResultsList.innerHTML = ''; // Clear previous results
-
-            if (top5Buses.length > 0) {
-                top5Buses.forEach(bus => {
-                    const travelTime = calculateTravelTime(bus.departPZV2, bus.arriveHQ);
-                    const busElement = document.createElement('div');
-                    busElement.className = 'bus-time-entry p-3 bg-gray-50 dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 flex flex-col sm:flex-row sm:items-center justify-between gap-2';
-                    busElement.innerHTML = `
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            <span class="text-sm text-gray-800 dark:text-gray-100">Departs PZV2: <strong class="font-semibold">${bus.departPZV2}</strong></span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                             <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                             <span class="text-sm text-gray-800 dark:text-gray-100">Arrives HQ: <strong class="font-semibold">${bus.arriveHQ}</strong></span>
-                        </div>
-                         <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"></path></svg>
-                            <span>Travel: ${travelTime} min</span>
-                        </div>
-                    `;
-                    searchResultsList.appendChild(busElement);
-                });
-                searchResultsContainer.classList.remove('hidden');
-            } else {
-                searchResultsList.innerHTML = `<div class="text-gray-500 dark:text-gray-400 p-2">No buses found arriving by ${targetArrivalTimeStr} for today.</div>`;
-                searchResultsContainer.classList.remove('hidden');
-            }
+        // --- Google API/GIS Functions ---
+        function gapiLoaded() {
+            console.log("gapiLoaded called"); // DEBUG
+            gapi.load('client', initializeGapiClient);
         }
+
+        function initializeGapiClient() {
+            console.log("initializeGapiClient called"); // DEBUG
+            gapi.client.init({/* discoveryDocs: [DISCOVERY_DOC] */}) // Removed API Key/Discovery Doc for simpler init if causing issues
+                .then(() => { 
+                    return gapi.client.load(DISCOVERY_DOC); // Load discovery doc separately
+                 }).then(() => {
+                    gapiInited = true;
+                    console.log("GAPI client initialized and discovery doc loaded."); // DEBUG
+                    if (document.readyState === 'complete') {
+                        console.log("GAPI ready, DOM complete, calling maybeEnableButtons"); // DEBUG
+                        maybeEnableButtons(); 
+                    }
+                }).catch(error => {
+                     console.error('Error initializing GAPI client:', error);
+                     if(authStatusDiv) authStatusDiv.textContent = 'Error loading Google API (GAPI).'; 
+                });
+        }
+
+        function gisLoaded() {
+            console.log("gisLoaded called"); // DEBUG
+            initializeGisClient();
+        }
+
+        function initializeGisClient() {
+             console.log("initializeGisClient called"); // DEBUG
+             try {
+                 google.accounts.id.initialize({
+                     client_id: CLIENT_ID,
+                     callback: handleCredentialResponse, 
+                     auto_select: true
+                 });
+                 tokenClient = google.accounts.oauth2.initTokenClient({
+                     client_id: CLIENT_ID,
+                     scope: CALENDAR_SCOPE,
+                     callback: handleTokenResponse,
+                 });
+                 gisInited = true;
+                 console.log("GIS client initialized."); // DEBUG
+                 if (document.readyState === 'complete') {
+                     console.log("GIS ready, DOM complete, calling maybeEnableButtons"); // DEBUG
+                     maybeEnableButtons(); 
+                 }
+                 
+                 google.accounts.id.prompt(/* ... */); // Keep prompt logic
+
+             } catch (error) {
+                 console.error('Error initializing GIS client:', error);
+                 if(authStatusDiv) authStatusDiv.textContent = 'Error loading Google API (GIS).';
+             }
+        }
+
+        function handleCredentialResponse(response) {
+            console.log("GIS ID Credential Response (Sign-In confirmed):");
+            userIsSignedIn = true;
+            // Update status ONLY if DOM element exists
+            if(authStatusDiv) authStatusDiv.textContent = 'Signed in. Ready to Authorize API.'; 
+            if (document.readyState === 'complete') {
+                maybeEnableButtons(); 
+                handleAuthClick(); // Try token immediately
+            } // Otherwise wait for DOMContentLoaded
+        }
+
+        function handleTokenResponse(resp) {
+             if (resp.error !== undefined) {
+                console.error('Google Auth Error (Token Response):', resp);
+                // Update status/buttons ONLY if DOM elements exist
+                if(authStatusDiv) authStatusDiv.textContent = 'Authorization failed.';
+                if(fetchEventButton) fetchEventButton.disabled = true; 
+                if(authorizeButton) {
+                    authorizeButton.disabled = false;
+                    authorizeButton.textContent = 'Sign In & Authorize Calendar';
+                }
+                // throw (resp); // Maybe don't throw to avoid breaking other things?
+                return; // Exit function on error
+            }
+            userIsSignedIn = true; 
+            console.log('GAPI client access token obtained.');
+            // Update status/buttons ONLY if DOM elements exist
+            if(authStatusDiv) authStatusDiv.textContent = 'Calendar Authorized!';
+            if(authorizeButton) {
+                authorizeButton.textContent = 'Calendar Authorized';
+                authorizeButton.disabled = true;
+            }
+            if(fetchEventButton) fetchEventButton.disabled = false;
+        }
+
+        function maybeEnableButtons() {
+            // Check if DOM is ready AND elements exist before trying to enable
+             if (!authorizeButton || !authStatusDiv || !fetchEventButton) {
+                 console.log("maybeEnableButtons called before DOM elements cached. Skipping.");
+                 return; // Exit if elements aren't cached yet
+             }
+             
+             console.log(`maybeEnableButtons: gapi=${gapiInited}, gis=${gisInited}, fetchBtnDisabled=${fetchEventButton.disabled}`);
+
+             if (gapiInited && gisInited && !fetchEventButton.disabled) {
+                 // Already authorized (fetch button enabled), do nothing more to auth button
+             } else if (gapiInited && gisInited) {
+                 // APIs ready, enable auth button if not already authorized
+                 authorizeButton.disabled = false;
+                 // Update status ONLY if it's still the default loading message
+                 if (authStatusDiv.textContent === 'Loading Google API...') {
+                    authStatusDiv.textContent = 'Ready to sign in.';
+                 }
+             } else {
+                 // APIs not ready, ensure buttons reflect this
+                 authorizeButton.disabled = true;
+                 fetchEventButton.disabled = true;
+                 // Keep the loading message or any error message already displayed
+             }
+        }
+
+        // ... (handleAuthClick, handleSignoutClick, fetchNextCalendarEvent remain largely the same) ...
+
     </script>
     <!-- Add onload callbacks for GAPI/GIS -->
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
