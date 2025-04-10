@@ -1086,6 +1086,91 @@
                 authStatusDiv.textContent = 'Error fetching events.';
             }
         }
+
+        // --- DOM Elements Caching ---
+        // Cache frequently accessed DOM elements after DOM is ready
+        let eventDetailsDiv, eventSummaryText, eventStartTimeText, targetArrivalTimeText;
+        let searchResultsContainer, searchResultsHeader, searchResultsList;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // ... existing DOMContentLoaded caching ...
+            eventDetailsDiv = document.getElementById('event-details');
+            eventSummaryText = document.getElementById('event-summary-text');
+            eventStartTimeText = document.getElementById('event-start-time-text');
+            targetArrivalTimeText = document.getElementById('target-arrival-time-text');
+            searchResultsContainer = document.getElementById('search-results-container');
+            searchResultsHeader = document.getElementById('search-results-header');
+            searchResultsList = document.getElementById('search-results-list');
+            // ... potentially other elements like authorizeButton, fetchEventButton if not already cached ...
+        });
+
+        // New function to find and display buses arriving by a target time
+        function findAndDisplayBusesByArrival(schedule, targetArrivalTimeStr, eventStartTimeStr) {
+             // Get today's date in Dubai for comparison
+            const nowDubai = getNowInDubaiTimezone(); 
+            const todayDubaiStr = `${nowDubai.getFullYear()}-${String(nowDubai.getMonth() + 1).padStart(2, '0')}-${String(nowDubai.getDate()).padStart(2, '0')}`;
+
+            const relevantBuses = [];
+
+            schedule.forEach(entry => {
+                const arriveTimeStr = entry.arriveHQ; // Assuming PZV2 -> HQ
+                const departTimeStr = entry.departPZV2;
+
+                if (!arriveTimeStr || !departTimeStr) return; // Skip invalid entries
+
+                // Compare arrival time string directly (HH:MM)
+                if (arriveTimeStr <= targetArrivalTimeStr) {
+                     // Construct a hypothetical arrival datetime for today to check if it already passed
+                    const [arrH, arrM] = arriveTimeStr.split(':').map(Number);
+                    const potentialArrivalDateTime = new Date(`${todayDubaiStr}T${String(arrH).padStart(2, '0')}:${String(arrM).padStart(2, '0')}:00.000+04:00`); // Construct with timezone
+                   
+                     // Only add if the bus hasn't already arrived today
+                    if (potentialArrivalDateTime > nowDubai) { 
+                        relevantBuses.push({ 
+                            departPZV2: departTimeStr, 
+                            arriveHQ: arriveTimeStr 
+                        });
+                    }
+                 } // else: Bus arrives too late, ignore
+            });
+
+            // Sort by arrival time descending (latest first)
+            relevantBuses.sort((a, b) => b.arriveHQ.localeCompare(a.arriveHQ));
+
+            // Limit to top 5
+            const top5Buses = relevantBuses.slice(0, 5);
+
+            // Update results header
+            searchResultsHeader.textContent = `Latest Buses Arriving at HQ by ${targetArrivalTimeStr} (for event at ${eventStartTimeStr})`;
+            searchResultsList.innerHTML = ''; // Clear previous results
+
+            if (top5Buses.length > 0) {
+                top5Buses.forEach(bus => {
+                    const travelTime = calculateTravelTime(bus.departPZV2, bus.arriveHQ);
+                    const busElement = document.createElement('div');
+                    busElement.className = 'bus-time-entry p-3 bg-gray-50 dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+                    busElement.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="text-sm text-gray-800 dark:text-gray-100">Departs PZV2: <strong class="font-semibold">${bus.departPZV2}</strong></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                             <span class="text-sm text-gray-800 dark:text-gray-100">Arrives HQ: <strong class="font-semibold">${bus.arriveHQ}</strong></span>
+                        </div>
+                         <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"></path></svg>
+                            <span>Travel: ${travelTime} min</span>
+                        </div>
+                    `;
+                    searchResultsList.appendChild(busElement);
+                });
+                searchResultsContainer.classList.remove('hidden');
+            } else {
+                searchResultsList.innerHTML = `<div class="text-gray-500 dark:text-gray-400 p-2">No buses found arriving by ${targetArrivalTimeStr} for today.</div>`;
+                searchResultsContainer.classList.remove('hidden');
+            }
+        }
     </script>
     <!-- Add onload callbacks for GAPI/GIS -->
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
