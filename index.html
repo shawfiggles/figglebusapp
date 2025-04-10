@@ -578,6 +578,37 @@
             });
         }
 
+        // --- Function for Shortcuts App ---
+        window.getNextBusInfoForShortcut = function() {
+            const nextBusEl = document.querySelector('#next-buses .ring-2'); // Find the highlighted next bus
+            if (!nextBusEl) {
+                return { error: "Next bus information not available." };
+            }
+
+            try {
+                const departureTimeEl = nextBusEl.querySelector('.text-lg span');
+                const isTomorrowEl = nextBusEl.querySelector('.text-lg .text-xs');
+                const arrivalTimeText = nextBusEl.querySelector('.text-sm.uppercase')?.textContent || '';
+                const countdownTextEl = nextBusEl.querySelector('.text-base.uppercase');
+
+                const departureTime = departureTimeEl ? departureTimeEl.textContent.trim() : 'N/A';
+                const isTomorrow = !!isTomorrowEl; // Check if the (Tomorrow) span exists
+                const arrivalTimeMatch = arrivalTimeText.match(/Arrives:\s*(\d{2}:\d{2})/);
+                const arrivalTime = arrivalTimeMatch ? arrivalTimeMatch[1] : 'N/A';
+                const countdownText = countdownTextEl ? countdownTextEl.textContent.trim() : 'N/A';
+
+                return {
+                    departure: departureTime,
+                    departureIsTomorrow: isTomorrow,
+                    arrival: arrivalTime,
+                    countdownText: countdownText
+                };
+            } catch (e) {
+                console.error("Error in getNextBusInfoForShortcut:", e);
+                return { error: "Failed to parse bus information." };
+            }
+        }
+
     </script>
 
 </body>
