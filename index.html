@@ -574,8 +574,7 @@
                     bus.arriveTime
                 );
                 travelTimeDiv.innerHTML = `
-                    <i class="fas fa-hourglass-half mr-2 fa-fw"></i>
-                    Travel time: ${travelMinutes} minutes
+                    <i class="fas fa-hourglass-half mr-1"></i> Travel time: ${travelMinutes} minutes
                 `;
                 busEntry.appendChild(travelTimeDiv);
 
@@ -726,28 +725,61 @@
 
         // Toggle full schedule (needs scheduleLoaded check)
         document.getElementById('toggle-schedule-btn').addEventListener('click', function() {
-            if (!scheduleLoaded) return; // Don't toggle if schedule not loaded
-            const fullScheduleContainer = document.getElementById('full-schedule-container');
-            const button = this;
+            console.log('[toggleScheduleBtn Click] scheduleLoaded:', scheduleLoaded); // DEBUG
+            if (!scheduleLoaded) {
+                console.warn("Full schedule toggle clicked, but schedule not loaded.");
+                return; 
+            }
             
-            if (fullScheduleContainer.style.maxHeight && fullScheduleContainer.style.maxHeight !== '0px') { // Check if currently expanded
-                // Collapse
+            // Use a class to track state, simpler than checking maxHeight/opacity
+            const isExpanded = fullScheduleContainer.classList.toggle('expanded'); // Toggle returns true if class added, false if removed
+
+            if (isExpanded) {
+                console.log("Expanding full schedule");
+                // Directly populate the container
+                populateFullSchedule(
+                    document.querySelector('.route-tab.active').dataset.direction === 'pzv2_to_hq' ? pzv2_to_hq : hq_to_pzv2,
+                    fullScheduleContainer, // Pass the container itself
+                    document.querySelector('.route-tab.active').dataset.direction
+                 ); 
+                // ... (rest of expansion logic)
+            } else {
+                console.log("Collapsing full schedule");
+                // Collapse styles
                 fullScheduleContainer.style.maxHeight = '0px';
                 fullScheduleContainer.style.opacity = '0';
-                if (button.textContent === 'Show Full Schedule') {
-                    button.textContent = 'Hide Full Schedule';
-                }
-                button.querySelector('i').classList.replace('fa-calendar-times', 'fa-calendar-alt'); // Change icon
-            } else {
-                // Expand
-                fullScheduleContainer.style.opacity = '1';
-                fullScheduleContainer.style.maxHeight = fullScheduleContainer.scrollHeight + "px"; 
-                if (button.textContent === 'Hide Full Schedule') {
-                    button.textContent = 'Show Full Schedule';
-                }
-                button.querySelector('i').classList.replace('fa-calendar-alt', 'fa-calendar-times'); // Change icon
+                this.textContent = 'Show Full Schedule';
             }
         });
+
+        // Populate Full Schedule function - Simplified (no scheduleList ID needed)
+        function populateFullSchedule(schedule, container, direction) {
+             if (!container) {
+                 console.error("Full schedule container not provided");
+                 return;
+             }
+             container.innerHTML = ''; // Clear existing content
+             if (!schedule || schedule.length === 0) {
+                container.innerHTML = `<div class="text-sm text-gray-500 dark:text-gray-400 p-2">No schedule data available.</div>`;
+                return;
+             }
+             
+             // Create and append entries directly to the container
+             schedule.forEach(entry => {
+                const departTime = direction === 'pzv2_to_hq' ? entry.departPZV2 : entry.departHQ;
+                const arriveTime = direction === 'pzv2_to_hq' ? entry.arriveHQ : entry.arrivePZV2;
+                const travelTime = calculateTravelTime(departTime, arriveTime);
+                
+                const item = document.createElement('div');
+                item.className = 'text-sm flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded mb-1'; // Added mb-1 for spacing
+                item.innerHTML = `
+                    <span>Depart: <strong>${departTime}</strong></span>
+                    <span>Arrive: <strong>${arriveTime}</strong></span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">(${travelTime} min)</span>
+                `;
+                container.appendChild(item); // Append directly to the container
+            });
+        }
 
         // Direction change handler (User Click)
         document.querySelectorAll('.route-tab').forEach(tab => {
@@ -856,6 +888,7 @@
             // Full Schedule Toggle - Listener using simplified populate
             if(toggleScheduleBtn && fullScheduleContainer) {
                  toggleScheduleBtn.addEventListener('click', function() {
+                     console.log('[toggleScheduleBtn Click] scheduleLoaded:', scheduleLoaded); // DEBUG
                      if (!scheduleLoaded) {
                          console.warn("Full schedule toggle clicked, but schedule not loaded.");
                          return; 
@@ -1031,6 +1064,7 @@
         }
 
         function maybeEnableButtons() {
+            console.log('[maybeEnableButtons] CALLED. gapiInited:', gapiInited, 'gisInited:', gisInited, 'authorizeButton exists:', !!authorizeButton); // DEBUG
             // Check if DOM is ready AND elements exist before trying to enable
              if (!authorizeButton || !authStatusDiv || !fetchEventButton) {
                  console.log("maybeEnableButtons called before DOM elements cached. Skipping.");
