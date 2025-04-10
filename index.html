@@ -795,7 +795,7 @@
                          startUpdateInterval(); // Start interval *after* initial setup based on location
                      },
                      (error) => { // Error / Denied
-                         console.warn(`Geolocation error (${error.code}): ${error.message}. Defaulting to PZV2 -> HQ.`);
+                         console.warn(`Geolocation error (${error.code}): ${error.message}. Defaulting to PZV2 → HQ.`);
                          selectRouteTab('pzv2_to_hq'); // Default tab (also triggers initial updateDisplay)
                          startUpdateInterval(); // Start interval *after* default setup
                      },
@@ -806,7 +806,7 @@
                      }
                  );
              } else { // Geolocation not supported
-                 console.warn("Geolocation is not supported by this browser. Defaulting to PZV2 -> HQ.");
+                 console.warn("Geolocation is not supported by this browser. Defaulting to PZV2 → HQ.");
                  selectRouteTab('pzv2_to_hq'); // Default tab (also triggers initial updateDisplay)
                  startUpdateInterval(); // Start interval *after* default setup
              }
