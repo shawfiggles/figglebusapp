@@ -19,10 +19,17 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="favicon.png">
-    <!-- Google Identity Services -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://apis.google.com/js/api.js" async defer></script>
     <script>
+        // Function to apply dark mode based on preference/localStorage
+        function applyDarkModePreference() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+        applyDarkModePreference(); // Apply on initial load
+        
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -32,592 +39,340 @@
                     },
                     colors: {
                         primary: {
-                            50: '#EEF2FF',
-                            100: '#E0E7FF',
-                            500: '#6366F1',
-                            600: '#4F46E5',
-                            700: '#4338CA',
-                            800: '#3730A3',
+                            50: '#EEF2FF', 100: '#E0E7FF',
+                            500: '#6366F1', 600: '#4F46E5',
+                            700: '#4338CA', 800: '#3730A3',
                             900: '#312E81'
                         },
-                        gray: {
-                            800: '#1F2937',
-                            900: '#111827'
+                        gray: { 
+                            800: '#1F2937', 900: '#111827' 
                         }
                     },
                     animation: {
                         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fadeInUp': 'fadeInUp 0.5s ease-out forwards',
+                        'slideDownFadeIn': 'slideDownFadeIn 0.3s ease-out forwards'
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            from: { opacity: 0, transform: 'translateY(10px)' },
+                            to: { opacity: 1, transform: 'translateY(0)' },
+                        },
+                        slideDownFadeIn: {
+                             from: { opacity: 0, transform: 'translateY(-20px)' },
+                             to: { opacity: 1, transform: 'translateY(0)' },
+                        },
+                        shimmer: {
+                            '0%': { backgroundPosition: '200% 0' },
+                            '100%': { backgroundPosition: '-200% 0' },
+                        }
                     }
                 }
             }
         }
-
-        // --- Google API Config --- 
-        const CLIENT_ID = "498236670497-dmqp8caege8gld654l2059bncvvss808.apps.googleusercontent.com"; // Keep Client ID
-        const API_KEY = "AIzaSyDET0MraeJhNg3KfwPCw-sVFxEZmS1Yov8"; // <-- REMOVED ACTUAL KEY - Replace with NEW, RESTRICTED key
-        const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events.readonly";
-        const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"]; // Define Discovery Docs
-        let tokenClient; // For handling authorization tokens
-        let gapiInited = false;
-        let gisInited = false;
-        let userIsSignedIn = false; // Track sign-in state via GIS ID
-
-        // --- Existing Config/Vars (Keep these lines commented or remove them) ---
-        /* 
-        const pzv2Coords = { lat: 25.24014157306891, lon: 55.29637545172292 };
-        const hqCoords = { lat: 25.241891643659287, lon: 55.36597152473545 };
-        let pzv2_to_hq = [];
-        let hq_to_pzv2 = [];
-        let scheduleLoaded = false;
-        const csvUrl = 'route-7-eghq-pzv1-pzv2-eghq-eff-08-september.csv'; // Relative path
-        const PROGRESS_WINDOW_MS = 30 * 60 * 1000; // 30 minutes in milliseconds
-        */
-
     </script>
-    <style>
+    <style type="text/tailwindcss">
         html {
-            scroll-padding-top: 2rem; /* Add scroll padding to prevent header overlap */
+            scroll-padding-top: 2rem; /* Adjust as needed */
         }
-        
-        /* Rewritten progress bar styles using standard CSS */
-        .progress-bar {
-             position: absolute;
-             bottom: 0;
-             left: 0;
-             height: 0.375rem; /* h-1.5 */
-             background-image: linear-gradient(to right, var(--tw-gradient-stops));
-             --tw-gradient-from: #6366F1; /* primary-500 */
-             --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(99, 102, 241, 0));
-             --tw-gradient-to: #4338CA; /* primary-700 */
-             transition-property: width;
-             transition-timing-function: linear;
-             transition-duration: 1000ms;
-             overflow: hidden; /* Added for consistency */
-        }
-        .progress-bar::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, 
-                rgba(255,255,255,0) 0%, 
-                rgba(255,255,255,0) 25%,
-                rgba(255,255,255,0.4) 50%,
-                rgba(255,255,255,0) 75%,
-                rgba(255,255,255,0) 100%
-            );
-            background-size: 200% 100%;
-            animation: shimmer 2.5s infinite linear;
-        }
-        
-        /* @keyframes are standard CSS, keep them */
-        @keyframes shimmer {
-            0% { background-position: 200% 0; } 
-            100% { background-position: -200% 0; }
-        }
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
+        @layer utilities {
+            .progress-bar {
+                @apply relative overflow-hidden absolute bottom-0 left-0 h-1.5 bg-gradient-to-r from-primary-500 to-primary-700 transition-all duration-1000 ease-linear;
             }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+            .progress-bar::after {
+                content: '';
+                @apply absolute top-0 left-0 w-full h-full;
+                background: linear-gradient(90deg, 
+                    rgba(255,255,255,0) 0%, rgba(255,255,255,0) 25%,
+                    rgba(255,255,255,0.4) 50%, 
+                    rgba(255,255,255,0) 75%, rgba(255,255,255,0) 100%
+                );
+                background-size: 200% 100%;
+                animation: shimmer 2.5s infinite linear;
             }
         }
-        @keyframes slideDownFadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* Full schedule styles are standard CSS, keep them */
-        #full-schedule-container {
-            transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
-            overflow: hidden; /* Ensure content clipped during transition */
-            /* DEBUG BORDER: */
-            /* border: 1px dashed red; */
-        }
-
-        #full-schedule-container:not(.expanded) {
-             max-height: 0;
-             opacity: 0;
-        }
-        
-         /* We might not need explicit expanded styles if toggling inline styles */
-         /* #full-schedule-container.expanded { ... } */
     </style>
 </head>
 <body class="h-full bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
     <div class="min-h-full">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
             <!-- Header -->
-            <div class="flex justify-between items-center mb-6 sm:mb-8" style="animation: fadeInUp 0.5s ease-out forwards;">
+            <div class="flex justify-between items-center mb-6 sm:mb-8 animate-fadeInUp" style="opacity:0;">
                 <h1 class="text-2xl font-bold uppercase text-gray-900 dark:text-white flex items-center" id="page-title">
                     <i class="fas fa-bus mr-3"></i>
                     <span>ROUTE 7</span>
                 </h1>
                 <div class="flex items-center space-x-3">
-                    <button id="open-search-button" class="p-2.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                    <button id="open-search-button" aria-label="Open Search" class="p-2.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
                         <i class="fas fa-search fa-fw"></i>
                     </button>
-                    <button id="darkModeToggle" class="p-2.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                    <button id="darkModeToggle" aria-label="Toggle Dark Mode" class="p-2.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
                         <i class="fas fa-moon fa-fw dark:hidden"></i>
                         <i class="fas fa-sun fa-fw hidden dark:block"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Main Content -->
-            <main class="container mx-auto px-4 py-4 md:py-6">
-                <div class="flex flex-col md:flex-row gap-4 items-start">
-                    <!-- Main Controls -->
-                    <div class="w-full md:w-1/2">
-                        <!-- Current Time -->
-                        <div class="text-center mb-2">
-                            <span class="text-xs text-gray-500 dark:text-gray-400">Current Dubai Time (GMT+4):</span>
-                            <div id="current-time" class="text-3xl font-bold text-gray-800 dark:text-gray-100">--:--:--</div>
-                        </div>
+            <!-- Current Time -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-5 animate-fadeInUp" style="animation-delay: 0.1s; opacity:0;">
+                <div class="text-center">
+                    <div class="text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400">Current Time (Dubai)</div>
+                    <div id="current-time" class="text-3xl font-semibold text-gray-900 dark:text-white mt-1">--:--</div>
+                </div>
+            </div>
 
-                        <!-- Google Calendar Integration -->
-                        <div id="calendar-controls" class="mb-2 p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
-                            <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">Calendar Event</h3>
-                            <div id="auth-status" class="text-sm text-gray-600 dark:text-gray-400 mb-2">Loading Google API...</div>
-                            <div class="flex gap-2 mb-2">
-                                <button id="authorize_button" disabled class="flex-1 px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">Sign In & Authorize</button>
-                                <button id="signout_button" class="flex-1 px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-md text-sm transition duration-150 ease-in-out">Sign Out</button>
-                            </div>
-                            <button id="fetch_event_button" disabled class="w-full px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">Suggest Bus for Next Event</button>
-                            <!-- Event Details & Target Time Display -->
-                            <div id="event-details" class="hidden mt-2 text-sm p-2 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
-                                <p id="event-summary-text" class="font-medium text-gray-800 dark:text-gray-100"></p>
-                                <p id="event-start-time-text" class="text-gray-600 dark:text-gray-300"></p>
-                                <p id="target-arrival-time-text" class="text-blue-600 dark:text-blue-400 font-semibold"></p>
-                            </div>
+            <!-- Direction Controls -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-4 animate-fadeInUp" style="animation-delay: 0.2s; opacity:0;">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="flex w-full sm:w-auto">
+                        <div class="flex rounded-md shadow-sm w-full sm:w-auto" role="group">
+                            <button type="button" class="route-tab active uppercase px-4 py-2.5 text-sm font-medium rounded-l-md border border-gray-200 dark:border-gray-700 bg-primary-50 dark:bg-primary-700 text-primary-700 dark:text-white hover:bg-primary-100 dark:hover:bg-primary-600 focus:z-10 focus:ring-2 focus:ring-primary-500" data-direction="pzv2_to_hq">
+                                <i class="fas fa-bus mr-2"></i>PZV2 → HQ
+                            </button>
+                            <button type="button" class="route-tab uppercase px-4 py-2.5 text-sm font-medium rounded-r-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-10 focus:ring-2 focus:ring-primary-500" data-direction="hq_to_pzv2">
+                                <i class="fas fa-bus mr-2"></i>HQ → PZV2
+                            </button>
                         </div>
-
-                        <!-- Direction Selector -->
-                        <div id="direction-selector" class="mb-2 flex rounded-md shadow-sm" role="group">
-                           <button type="button" data-direction="pzv2_to_hq" class="route-tab active px-4 py-2 text-sm font-medium text-primary-700 bg-primary-50 border border-gray-200 rounded-l-lg hover:bg-primary-100 focus:z-10 focus:ring-2 focus:ring-primary-500 focus:text-primary-700 dark:bg-primary-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-primary-600 dark:focus:ring-blue-500 dark:focus:text-white w-1/2">
-                             PZV2 → HQ
-                           </button>
-                           <button type="button" data-direction="hq_to_pzv2" class="route-tab px-4 py-2 text-sm font-medium text-gray-700 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-2 focus:ring-primary-500 focus:text-primary-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white w-1/2 rounded-r-md">
-                             HQ → PZV2
-                           </button>
-                        </div>
-
                     </div>
+                    <button id="toggleSchedule" class="inline-flex uppercase items-center px-4 py-2.5 border border-transparent text-xs font-semibold tracking-wider rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors w-full sm:w-auto">
+                        <i class="fas fa-calendar-alt mr-2"></i>
+                        <span>Show Full Schedule</span>
+                    </button>
+                </div>
+            </div>
 
-                    <!-- Output Area -->
-                    <div class="w-full md:w-1/2">
-                        <!-- Live Next Buses -->
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
-                            <h3 class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-100">Next Departures</h3>
-                            <div id="next-buses" class="space-y-3">
-                                <!-- Bus times will be injected here by JS -->
-                                 <div class="text-gray-500 dark:text-gray-400 p-4">Loading schedule...</div>
-                            </div>
-                            <!-- MOVED Full Schedule Button and Container INSIDE this card -->
-                            <button id="toggle-schedule-btn" class="mt-4 w-full px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md transition duration-150 ease-in-out">Show Full Schedule</button>
-                            <div id="full-schedule-container" class="hidden mt-3 border-t border-gray-200 dark:border-gray-600 pt-3 max-h-60 overflow-y-auto"></div>
-                        </div>
+            <!-- Next Buses -->
+            <div class="mb-5 animate-fadeInUp" style="animation-delay: 0.3s; opacity:0;">
+                <h2 class="text-lg uppercase font-semibold tracking-wider text-gray-900 dark:text-white mb-4">Next Departures</h2>
+                <div id="next-buses" class="space-y-3 sm:space-y-4">
+                     <div class="text-gray-500 dark:text-gray-400 p-4 text-center">Loading schedule...</div>
+                </div>
+            </div>
 
-                        <!-- Event-Based Search Results -->
-                        <div id="search-results-container" class="hidden bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-                            <h3 id="search-results-header" class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-100">Bus Suggestions</h3>
-                            <div id="search-results-list" class="space-y-3">
-                                <!-- Search results will appear here -->
-                            </div>
-                        </div>
+            <!-- Full Schedule -->
+            <div id="full-schedule" class="opacity-0 transition-all duration-500 ease-in-out max-h-0 overflow-hidden scroll-mt-4">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Full Schedule</h2>
+                    <div id="schedule-list" class="space-y-2">
+                        <!-- Schedule entries populated by JS -->
                     </div>
                 </div>
-            </main>
+            </div>
 
-            <!-- Search Overlay (New) -->
-            <div id="search-overlay" 
-                 class="hidden fixed inset-0 bg-gray-100/80 dark:bg-gray-900/80 backdrop-blur-sm z-50 p-4 sm:p-6 lg:p-8 transition-opacity duration-300 ease-in-out" 
-                 style="animation: slideDownFadeIn 0.3s ease-out forwards;">
+            <!-- Search Overlay -->
+            <div id="search-overlay" class="hidden fixed inset-0 bg-gray-100/80 dark:bg-gray-900/80 backdrop-blur-sm z-50 p-4 sm:p-6 lg:p-8 animate-slideDownFadeIn">
                 <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-xl mx-auto p-6 mt-10">
-                    <button id="close-search-button" class="absolute top-4 right-4 p-1 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
+                    <button id="close-search-button" aria-label="Close Search" class="absolute top-4 right-4 p-1 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
                         <i class="fas fa-times fa-lg"></i>
                     </button>
                     <h2 class="text-lg uppercase font-semibold text-gray-900 dark:text-white mb-4">Find Bus Before Arrival Time</h2>
                     <div class="flex flex-col sm:flex-row items-end gap-4">
                         <div class="flex-grow w-full">
-                            <label for="arrival-time-search" class="block text-sm font-medium uppercase text-gray-700 dark:text-gray-300 mb-1">Desired Arrival Time:</label>
-                            <input type="time" id="arrival-time-search" name="arrival-time-search"
-                                   class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:text-white p-2">
+                            <label for="arrival-time-search" class="block text-sm font-medium uppercase text-gray-700 dark:text-gray-300 mb-1">Desired Arrival Time (PZV2 → HQ Only):</label>
+                            <input type="time" id="arrival-time-search" name="arrival-time-search" class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:text-white p-2">
                         </div>
-                        <button id="search-button"
-                                class="inline-flex uppercase items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors w-full sm:w-auto">
+                        <button id="search-button" type="button" class="inline-flex uppercase items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors w-full sm:w-auto">
                             <i class="fas fa-search mr-2"></i> Search
                         </button>
                     </div>
                     <div id="search-results" class="mt-4 space-y-3">
-                        <!-- Search results will appear here -->
+                        <!-- Search results appear here -->
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
+        </div> <!-- /max-w container -->
+    </div> <!-- /min-h-full -->
+
+    <!-- =================== JAVASCRIPT =================== -->
     <script>
-        // Dark mode toggle
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-
-        darkModeToggle.addEventListener('click', () => {
-            document.documentElement.classList.toggle('dark');
-            localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-        });
-
-        // Search Bar Toggle Logic
-        const openSearchButton = document.getElementById('open-search-button');
-        const closeSearchButton = document.getElementById('close-search-button');
-        const searchOverlay = document.getElementById('search-overlay');
-
-        if (openSearchButton && closeSearchButton && searchOverlay) {
-            openSearchButton.addEventListener('click', () => {
-                searchOverlay.classList.remove('hidden');
-            });
-
-            closeSearchButton.addEventListener('click', () => {
-                searchOverlay.classList.add('hidden');
-            });
-
-            // Add event listener to close overlay when clicking outside the content box
-            searchOverlay.addEventListener('click', (event) => {
-                // Check if the click is directly on the overlay background itself
-                if (event.target === searchOverlay) {
-                    searchOverlay.classList.add('hidden');
-                }
-            });
-        } else {
-            console.error("Search toggle buttons or overlay not found!");
-        }
-
-        // --- Coordinates ---
+        // --- Global State & Constants ---
         const pzv2Coords = { lat: 25.24014157306891, lon: 55.29637545172292 };
         const hqCoords = { lat: 25.241891643659287, lon: 55.36597152473545 };
-
-        // --- Schedule Data (will be loaded dynamically) ---
+        const PROGRESS_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
+        const csvUrl = 'route-7-eghq-pzv1-pzv2-eghq-eff-08-september.csv';
         let pzv2_to_hq = [];
         let hq_to_pzv2 = [];
         let scheduleLoaded = false;
-        const csvUrl = 'route-7-eghq-pzv1-pzv2-eghq-eff-08-september.csv'; // Relative path
-        const PROGRESS_WINDOW_MS = 30 * 60 * 1000; // 30 minutes in milliseconds
+        let updateIntervalId = null; // To store the interval ID
+
+        // --- DOM Elements --- 
+        const currentTimeEl = document.getElementById('current-time');
+        const nextBusesContainer = document.getElementById('next-buses');
+        const scheduleListContainer = document.getElementById('schedule-list');
+        const fullScheduleContainer = document.getElementById('full-schedule');
+        const toggleScheduleButton = document.getElementById('toggleSchedule');
+        const searchOverlay = document.getElementById('search-overlay');
+        const openSearchButton = document.getElementById('open-search-button');
+        const closeSearchButton = document.getElementById('close-search-button');
+        const searchButton = document.getElementById('search-button');
+        const searchInput = document.getElementById('arrival-time-search');
+        const searchResultsContainer = document.getElementById('search-results');
+        const darkModeToggleButton = document.getElementById('darkModeToggle');
+        const routeTabs = document.querySelectorAll('.route-tab');
 
         // --- Helper Functions ---
         function getNowInDubaiTimezone() {
             const now = new Date();
-            const dubaiOffset = 4 * 60; // Dubai is GMT+4
+            const dubaiOffset = 4 * 60; // GMT+4
             const localOffset = now.getTimezoneOffset();
             const offsetDiff = dubaiOffset + localOffset;
             return new Date(now.getTime() + offsetDiff * 60000);
         }
 
         function formatTime(date) {
-            return date.toLocaleTimeString('en-GB', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hourCycle: 'h23'
-            });
+            return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
         }
 
         function formatCountdown(milliseconds) {
-            const totalSeconds = Math.floor(milliseconds / 1000);
+            const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
             const hours = Math.floor(totalSeconds / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
-
-            if (hours > 0) {
-                return `${hours}h ${minutes}m ${seconds}s`;
-            } else if (minutes > 0) {
-                return `${minutes}m ${seconds}s`;
-            } else {
-                return `${seconds}s`;
-            }
+            if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+            if (minutes > 0) return `${minutes}m ${seconds}s`;
+            return `${seconds}s`;
         }
 
-        function calculateTravelTime(departTime, arriveTime) {
-            const [departHours, departMinutes] = departTime.split(':').map(Number);
-            const [arriveHours, arriveMinutes] = arriveTime.split(':').map(Number);
-            
-            let totalMinutes = (arriveHours * 60 + arriveMinutes) - (departHours * 60 + departMinutes);
-            if (totalMinutes < 0) {
-                totalMinutes += 24 * 60; // Add 24 hours if arrival is next day
-            }
-            
-            return totalMinutes;
+        function calculateTravelTime(departTimeStr, arriveTimeStr) {
+            try {
+                 const [depH, depM] = departTimeStr.split(':').map(Number);
+                 const [arrH, arrM] = arriveTimeStr.split(':').map(Number);
+                 if ([depH, depM, arrH, arrM].some(isNaN)) return NaN; // Invalid input
+                 let totalMinutes = (arrH * 60 + arrM) - (depH * 60 + depM);
+                 if (totalMinutes < 0) totalMinutes += 24 * 60; // Handles next day arrival
+                 return totalMinutes;
+            } catch { return NaN; }
         }
 
-        // New function to format a Date object as HH:MM in Dubai time
-        function formatAsDubaiHHMM(date) {
-          try {
-            return date.toLocaleTimeString('en-GB', { // Use en-GB for HH:MM
-              timeZone: 'Asia/Dubai', // Explicitly use Dubai timezone
-              hour: '2-digit',
-              minute: '2-digit',
-              hourCycle: 'h23' // Ensure 24-hour format
-            });
-          } catch (e) {
-             console.error("Error formatting time for Dubai timezone:", e);
-             // Fallback to browser's local time formatting if timezone API fails
-             const hours = date.getHours().toString().padStart(2, '0');
-             const minutes = date.getMinutes().toString().padStart(2, '0');
-             return `${hours}:${minutes}`;
-          }
-        }
-
-        // --- Haversine Distance Calculation ---
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Radius of the Earth in km
-            const dLat = deg2rad(lat2 - lat1);
-            const dLon = deg2rad(lon2 - lon1);
-            const a =
-                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const R = 6371; // km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            const d = R * c; // Distance in km
-            return d;
+            return R * c;
         }
 
-        function deg2rad(deg) {
-            return deg * (Math.PI / 180);
-        }
-
-        // --- Function to Load and Parse Schedule ---
+        // --- Core Logic ---
         async function loadSchedule() {
             try {
-                const response = await fetch(csvUrl);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status} while fetching ${csvUrl}`);
-                }
+                const response = await fetch(csvUrl + `?t=${Date.now()}`); // Cache bust
+                if (!response.ok) throw new Error(`HTTP ${response.status} fetching CSV`);
                 const csvText = await response.text();
-                
-                // Parse CSV
-                const lines = csvText.trim().split('\n'); // Split into lines
-                // Skip header rows (assuming first 2 rows are headers)
-                const dataLines = lines.slice(2); 
+                const lines = csvText.trim().split('\n').slice(2);
+                const temp_pzv2_to_hq = [];
+                const temp_hq_to_pzv2 = [];
 
-                pzv2_to_hq = []; // Clear any previous data
-                hq_to_pzv2 = []; // Clear any previous data
-
-                dataLines.forEach(line => {
+                lines.forEach(line => {
                     const columns = line.trim().split(',');
-                    if (columns.length === 4) { // Ensure valid row
-                        const hqDeparture = columns[0];
-                        const pzv1 = columns[1]; // Not used currently, but parsed
-                        const pzv2 = columns[2];
-                        const hqArrival = columns[3];
-
-                        // Populate HQ -> PZV2 schedule
-                        if (hqDeparture && pzv2) {
-                             hq_to_pzv2.push({ departHQ: hqDeparture, arrivePZV2: pzv2 });
-                        }
-                       
-                        // Populate PZV2 -> HQ schedule
-                        if (pzv2 && hqArrival) {
-                            pzv2_to_hq.push({ departPZV2: pzv2, arriveHQ: hqArrival });
-                        }
+                    if (columns.length === 4) {
+                        const [hqDeparture, , pzv2, hqArrival] = columns;
+                        if (hqDeparture && pzv2) temp_hq_to_pzv2.push({ departHQ: hqDeparture, arrivePZV2: pzv2 });
+                        if (pzv2 && hqArrival) temp_pzv2_to_hq.push({ departPZV2: pzv2, arriveHQ: hqArrival });
                     }
                 });
                 
-                console.log("Schedule loaded and parsed successfully.");
+                if (temp_pzv2_to_hq.length === 0 && temp_hq_to_pzv2.length === 0) {
+                    throw new Error("CSV parsing resulted in empty schedules");
+                }
+                
+                pzv2_to_hq = temp_pzv2_to_hq;
+                hq_to_pzv2 = temp_hq_to_pzv2;
+                console.log("Schedule loaded & parsed successfully.");
                 scheduleLoaded = true;
-
             } catch (error) {
-                console.error("Failed to load or parse schedule:", error);
-                // Display an error message to the user on the page
-                 document.getElementById('next-buses').innerHTML = `<div class="text-red-600 dark:text-red-400 p-4 bg-red-100 dark:bg-red-900 rounded-md">Error loading bus schedule. Please check the CSV file or network connection.</div>`;
-                scheduleLoaded = false; // Ensure we know loading failed
+                console.error("Schedule Load/Parse Error:", error);
+                if (nextBusesContainer) nextBusesContainer.innerHTML = `<div class="text-red-600 dark:text-red-400 p-4 bg-red-100 dark:bg-red-900 rounded-md text-center">Failed to load schedule data. Please check connection or CSV file.</div>`;
+                scheduleLoaded = false;
             }
         }
 
-        // --- Function to Programmatically Select Route Tab ---
-        function selectRouteTab(directionValue) {
-             console.log(`Programmatically selecting tab: ${directionValue}`);
-             document.querySelectorAll('.route-tab').forEach(t => {
-                 const tabDirection = t.dataset.direction;
-                 // Remove active classes (generic)
-                 t.classList.remove('active', 
-                                  'bg-primary-50', 'dark:bg-primary-700', 'dark:bg-primary-900', // Remove old dark bg possibilities 
-                                  'text-primary-700', 'dark:text-white', 'dark:text-primary-300'); // Remove old dark text possibilities
-                 // Add default inactive classes
-                 t.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
-                 
-                 // Apply active classes to the target tab
-                 if (tabDirection === directionValue) {
-                     t.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
-                     // Apply NEW active styles
-                     t.classList.add('active', 'bg-primary-50', 'dark:bg-primary-700', 'text-primary-700', 'dark:text-white'); 
-                 }
-             });
-             // Update display immediately after changing the tab state
-             updateDisplay();
-        }
-
-         // --- Function to start the regular update interval ---
-         function startUpdateInterval() {
-             console.log("Starting update interval.");
-             setInterval(updateDisplay, 1000); 
-         }
-
-        // --- Update Display (needs scheduleLoaded check) ---
         function updateDisplay() {
             if (!scheduleLoaded) {
-                // Maybe show a loading indicator or wait message if not already showing error
-                console.log("Waiting for schedule to load...");
-                // Ensure loading message persists if needed
-                if (!document.getElementById('next-buses').querySelector('.text-red-600')) {
-                    document.getElementById('next-buses').innerHTML = `<div class="text-gray-500 dark:text-gray-400 p-4">Loading schedule...</div>`;
-                }
-                return; 
+                 if (nextBusesContainer && !nextBusesContainer.querySelector('.text-red-600')) {
+                    nextBusesContainer.innerHTML = `<div class="text-gray-500 dark:text-gray-400 p-4 text-center">Loading schedule...</div>`;
+                 }
+                 return;
             }
             
             const now = getNowInDubaiTimezone();
-            const currentTimeStr = formatTime(now);
-            document.getElementById('current-time').textContent = currentTimeStr;
+            if (currentTimeEl) currentTimeEl.textContent = formatTime(now);
 
-            const direction = document.querySelector('.route-tab.active').dataset.direction;
-            // Use the globally loaded schedule data
-            const schedule = direction === 'pzv2_to_hq' ? pzv2_to_hq : hq_to_pzv2; 
-            const nextBusesContainer = document.getElementById('next-buses');
+            const activeTab = document.querySelector('.route-tab.active');
+            if (!activeTab) return; // Should not happen
+            const direction = activeTab.dataset.direction;
+            const schedule = direction === 'pzv2_to_hq' ? pzv2_to_hq : hq_to_pzv2;
             
-            nextBusesContainer.innerHTML = ''; // Clear only next buses here
+            if (!nextBusesContainer) return;
+            nextBusesContainer.innerHTML = ''; // Clear previous entries
 
             if (!schedule || schedule.length === 0) {
-                 nextBusesContainer.innerHTML = `<div class="text-yellow-600 dark:text-yellow-400 p-4 bg-yellow-100 dark:bg-yellow-900 rounded-md">Schedule data is empty or invalid for this direction.</div>`;
-                 return; // Stop processing if schedule is empty
+                nextBusesContainer.innerHTML = `<div class="text-yellow-600 dark:text-yellow-400 p-4 bg-yellow-100 dark:bg-yellow-900 rounded-md text-center">Schedule data unavailable for this direction.</div>`;
+                return;
             }
 
-            // Find next three departures
+            // --- Find Next Departures --- 
             const potentialDepartures = [];
-            const today = new Date(now);
-            const tomorrow = new Date(now);
-            tomorrow.setDate(tomorrow.getDate() + 1);
+            const today = new Date(now); today.setSeconds(0,0);
+            const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1); tomorrow.setSeconds(0,0);
 
             schedule.forEach(entry => {
-                // Defensive check for entry structure
                 if (!entry) return;
-                const departTime = direction === 'pzv2_to_hq' ? entry.departPZV2 : entry.departHQ;
-                const arriveTime = direction === 'pzv2_to_hq' ? entry.arriveHQ : entry.arrivePZV2;
+                const departTimeStr = direction === 'pzv2_to_hq' ? entry.departPZV2 : entry.departHQ;
+                const arriveTimeStr = direction === 'pzv2_to_hq' ? entry.arriveHQ : entry.arrivePZV2;
+                if (!departTimeStr || !arriveTimeStr) return;
+                const [hours, minutes] = departTimeStr.split(':').map(Number);
+                if (isNaN(hours) || isNaN(minutes)) return;
+
+                const todayDeparture = new Date(today); todayDeparture.setHours(hours, minutes);
+                const tomorrowDeparture = new Date(tomorrow); tomorrowDeparture.setHours(hours, minutes);
                 
-                // Ensure times exist before proceeding
-                if (!departTime || !arriveTime) {
-                    console.warn("Skipping schedule entry with missing times:", entry);
-                    return;
-                }
-
-                // Create Date objects for today and tomorrow
-                const [hours, minutes] = departTime.split(':').map(Number);
-                
-                 // Validate parsed times
-                if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-                    console.warn("Skipping schedule entry with invalid depart time format:", entry);
-                    return;
-                }
-
-                const todayDeparture = new Date(today);
-                todayDeparture.setHours(hours, minutes, 0, 0);
-                
-                const tomorrowDeparture = new Date(tomorrow);
-                tomorrowDeparture.setHours(hours, minutes, 0, 0);
-
-                if (todayDeparture > now) {
-                    potentialDepartures.push({
-                        departTime: todayDeparture,
-                        arriveTime: arriveTime,
-                        isTomorrow: false
-                    });
-                }
-
-                potentialDepartures.push({
-                    departTime: tomorrowDeparture,
-                    arriveTime: arriveTime,
-                    isTomorrow: true
-                });
+                if (todayDeparture > now) potentialDepartures.push({ departTime: todayDeparture, arriveTime: arriveTimeStr, isTomorrow: false });
+                potentialDepartures.push({ departTime: tomorrowDeparture, arriveTime: arriveTimeStr, isTomorrow: true });
             });
-
-            // Sort by departure time and take next three
-            potentialDepartures.sort((a, b) => a.departTime - b.departTime);
-
-            // Create a sorted list of all future departure Date objects for progress calculation
-            const allFutureDepartures = potentialDepartures.map(p => p.departTime);
-
-            const nextThree = potentialDepartures.slice(0, 3);
             
-             // Handle case where no future buses are found (e.g., end of day before schedule wraps)
+            potentialDepartures.sort((a, b) => a.departTime - b.departTime);
+            const nextThree = potentialDepartures.slice(0, 3);
+
             if (nextThree.length === 0) {
-                 nextBusesContainer.innerHTML = `<div class="text-gray-500 dark:text-gray-400 p-4">No upcoming departures found for today/tomorrow.</div>`;
+                nextBusesContainer.innerHTML = `<div class="text-gray-500 dark:text-gray-400 p-4 text-center">No upcoming departures found.</div>`;
+                return;
             }
 
-            // Display next buses
+            // --- Display Next Buses --- 
             nextThree.forEach((bus, index) => {
                 const isNext = index === 0;
-                const countdown = bus.departTime - now; // Time remaining in ms
+                const countdown = bus.departTime - now;
+                const progress = isNext ? Math.max(0, Math.min(100, (countdown / PROGRESS_WINDOW_MS) * 100)) : 0;
+                const travelMinutes = calculateTravelTime(formatTime(bus.departTime), bus.arriveTime);
                 
-                let progress = 0;
-                if (isNext) {
-                    // Option 1: % of fixed window remaining
-                    progress = Math.max(0, Math.min(100, (countdown / PROGRESS_WINDOW_MS) * 100));
-                }
-
                 const busEntry = document.createElement('div');
                 busEntry.className = `relative overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 ${isNext ? 'ring-2 ring-primary-500 dark:bg-gray-700 dark:ring-primary-500' : 'dark:bg-gray-800'}`;
                 
-                const topRow = document.createElement('div');
-                topRow.className = 'flex justify-between items-center mb-3'; 
-                
-                const departTimeDiv = document.createElement('div');
-                departTimeDiv.className = 'text-lg font-semibold text-gray-900 dark:text-white flex items-center'; 
-                departTimeDiv.innerHTML = `
-                    <i class="far fa-clock mr-2 text-gray-500 dark:text-gray-400"></i>
-                    <span>${formatTime(bus.departTime)}</span>
-                    ${bus.isTomorrow ? '<span class="text-xs font-normal normal-case text-gray-500 dark:text-gray-400 ml-2 pt-1">(Tomorrow)</span>' : ''}
+                busEntry.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                            <i class="far fa-clock mr-2 text-gray-500 dark:text-gray-400"></i>
+                            <span>${formatTime(bus.departTime)}</span>
+                            ${bus.isTomorrow ? '<span class="text-xs font-normal normal-case text-gray-500 dark:text-gray-400 ml-2 pt-1">(Tomorrow)</span>' : ''}
+                        </div>
+                        <div class="text-sm uppercase text-gray-500 dark:text-gray-400 flex items-center">
+                            <i class="fas fa-flag-checkered mr-2"></i>
+                            Arrives: ${bus.arriveTime}
+                        </div>
+                    </div>
+                    <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3 flex items-center">
+                        <i class="fas fa-hourglass-half mr-2 fa-fw"></i>
+                        Travel time: ${isNaN(travelMinutes) ? 'N/A' : travelMinutes + ' min'}
+                    </div>
+                    <div class="text-base uppercase font-bold text-primary-600 dark:text-primary-400 flex items-center">
+                        <i class="fas fa-stopwatch mr-2 fa-fw"></i>
+                        Departing in: ${formatCountdown(countdown)}
+                    </div>
                 `;
-                
-                const arriveTimeDiv = document.createElement('div');
-                arriveTimeDiv.className = 'text-sm uppercase text-gray-500 dark:text-gray-400 flex items-center';
-                arriveTimeDiv.innerHTML = `
-                    <i class="fas fa-flag-checkered mr-2"></i>
-                    Arrives: ${bus.arriveTime}
-                `;
-                
-                topRow.appendChild(departTimeDiv);
-                topRow.appendChild(arriveTimeDiv);
-                busEntry.appendChild(topRow);
-
-                const travelTimeDiv = document.createElement('div'); 
-                travelTimeDiv.className = 'text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3 flex items-center';
-                const travelMinutes = calculateTravelTime(
-                    formatTime(bus.departTime),
-                    bus.arriveTime
-                );
-                travelTimeDiv.innerHTML = `
-                    <i class="fas fa-hourglass-half mr-1"></i> Travel time: ${travelMinutes} minutes
-                `;
-                busEntry.appendChild(travelTimeDiv);
-
-                const countdownDiv = document.createElement('div');
-                countdownDiv.className = 'text-base uppercase font-bold text-primary-600 dark:text-primary-400 flex items-center'; 
-                countdownDiv.innerHTML = `
-                    <i class="fas fa-stopwatch mr-2 fa-fw"></i>
-                    Departing in: ${formatCountdown(countdown)}
-                `;
-                busEntry.appendChild(countdownDiv);
 
                 if (isNext) {
                     const progressBar = document.createElement('div');
@@ -625,537 +380,205 @@
                     progressBar.style.width = `${progress}%`;
                     busEntry.appendChild(progressBar);
                 }
-
                 nextBusesContainer.appendChild(busEntry);
             });
         }
 
-        // Search Function Logic (needs scheduleLoaded check)
-        const searchButtonInOverlay = searchOverlay.querySelector('#search-button');
-        if (searchButtonInOverlay) {
-             searchButtonInOverlay.addEventListener('click', () => {
+        function selectRouteTab(directionValue) {
+            routeTabs.forEach(t => {
+                 const tabDirection = t.dataset.direction;
+                 t.classList.remove('active', 'bg-primary-50', 'dark:bg-primary-700', 'text-primary-700', 'dark:text-white');
+                 t.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
+                 if (tabDirection === directionValue) {
+                     t.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
+                     t.classList.add('active', 'bg-primary-50', 'dark:bg-primary-700', 'text-primary-700', 'dark:text-white'); 
+                 }
+             });
+             updateDisplay();
+        }
+
+        function startUpdateInterval() {
+             if (updateIntervalId) clearInterval(updateIntervalId); // Clear existing interval if any
+             updateIntervalId = setInterval(updateDisplay, 1000);
+             console.log("Update interval started.");
+        }
+        
+        // --- Event Listeners ---
+        if (darkModeToggleButton) {
+            darkModeToggleButton.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+            });
+        }
+        
+        if (openSearchButton && closeSearchButton && searchOverlay) {
+            openSearchButton.addEventListener('click', () => searchOverlay.classList.remove('hidden'));
+            closeSearchButton.addEventListener('click', () => searchOverlay.classList.add('hidden'));
+            searchOverlay.addEventListener('click', (event) => { 
+                 if (event.target === searchOverlay) searchOverlay.classList.add('hidden'); 
+            });
+        }
+        
+        if (searchButton && searchInput && searchResultsContainer) {
+            searchButton.addEventListener('click', () => {
                 if (!scheduleLoaded) {
-                     document.getElementById('search-results').innerHTML = `<p class="text-yellow-600 dark:text-yellow-400">Schedule is still loading, please wait...</p>`;
-                     return;
-                }
-                const searchInput = document.getElementById('arrival-time-search');
-                const desiredArrivalTimeStr = searchInput.value;
-                const resultsContainer = document.getElementById('search-results');
-                resultsContainer.innerHTML = ''; // Clear previous results
-    
-                if (!desiredArrivalTimeStr) {
-                    resultsContainer.innerHTML = `<p class="text-red-600 dark:text-red-400">Please enter a desired arrival time.</p>`;
+                    searchResultsContainer.innerHTML = `<p class="text-yellow-600 dark:text-yellow-400">Schedule loading...</p>`;
                     return;
                 }
-
-                // --- Check Direction --- 
-                const direction = document.querySelector('.route-tab.active').dataset.direction;
+                const direction = document.querySelector('.route-tab.active')?.dataset.direction;
                 if (direction !== 'pzv2_to_hq') {
-                    resultsContainer.innerHTML = `<p class="text-yellow-600 dark:text-yellow-400">Arrival time search is only available for the PZV2 → HQ route.</p>`;
+                    searchResultsContainer.innerHTML = `<p class="text-yellow-600 dark:text-yellow-400">Arrival search only for PZV2 → HQ.</p>`;
                     return; 
                 }
-                // --- End Check Direction --- 
-    
+                
+                const desiredTime = searchInput.value;
+                searchResultsContainer.innerHTML = '';
+                if (!desiredTime) {
+                    searchResultsContainer.innerHTML = `<p class="text-red-600 dark:text-red-400">Enter arrival time.</p>`;
+                    return;
+                }
+                
                 try {
                     const now = getNowInDubaiTimezone();
+                    const [targetH, targetM] = desiredTime.split(':').map(Number);
+                    if (isNaN(targetH) || isNaN(targetM)) throw new Error("Invalid time format");
+                    const targetDate = new Date(now); targetDate.setHours(targetH, targetM, 0, 0);
                     
-                    // Hardcode schedule and keys for PZV2 -> HQ route since we checked the direction
-                    const schedule = pzv2_to_hq;
-                    const arrivalKey = 'arriveHQ';
-                    const departureKey = 'departPZV2';
-                    const destination = 'HQ';
-
-                    // Add check if schedule is loaded and valid
-                    if (!schedule || schedule.length === 0) {
-                         resultsContainer.innerHTML = `<p class="text-yellow-600 dark:text-yellow-400">Schedule data is empty or invalid. Cannot perform search.</p>`;
-                         return;
-                    }
-
-                    const [targetHours, targetMinutes] = desiredArrivalTimeStr.split(':').map(Number);
+                    const relevantTrips = pzv2_to_hq.map(trip => {
+                        const [arrH, arrM] = trip.arriveHQ.split(':').map(Number);
+                        if (isNaN(arrH) || isNaN(arrM)) return null;
+                        const arrivalDate = new Date(now); arrivalDate.setHours(arrH, arrM, 0, 0);
+                        return arrivalDate <= targetDate ? { ...trip, arrivalDateTime: arrivalDate } : null;
+                    }).filter(Boolean);
                     
-                    // Validate search time input
-                    if (isNaN(targetHours) || isNaN(targetMinutes) || targetHours < 0 || targetHours > 23 || targetMinutes < 0 || targetMinutes > 59) {
-                         resultsContainer.innerHTML = `<p class="text-red-600 dark:text-red-400">Invalid time format entered.</p>`;
-                         return;
-                    }
-
-                    const targetArrivalDate = new Date(now); // Use today's date as reference
-                    targetArrivalDate.setHours(targetHours, targetMinutes, 0, 0);
-
-                    const relevantTrips = [];
-
-                    schedule.forEach(trip => {
-                        // Add checks for trip structure and time validity
-                        if (!trip || !trip[arrivalKey] || !trip[departureKey]) return;
-
-                        const [arrHours, arrMinutes] = trip[arrivalKey].split(':').map(Number);
-                         if (isNaN(arrHours) || isNaN(arrMinutes)) return; // Skip invalid arrival times in schedule
-
-                        const scheduledArrivalDate = new Date(now);
-                        scheduledArrivalDate.setHours(arrHours, arrMinutes, 0, 0);
-
-                        // Handle potential midnight wrap-around for comparison
-                        if (scheduledArrivalDate <= targetArrivalDate) {
-                             const [depHours, depMinutes] = trip[departureKey].split(':').map(Number);
-                              if (isNaN(depHours) || isNaN(depMinutes)) return; // Skip invalid depart times
-
-                             const scheduledDepartureDate = new Date(now);
-                             scheduledDepartureDate.setHours(depHours, depMinutes, 0, 0);
-                             
-                             if (scheduledArrivalDate < scheduledDepartureDate) {
-                                 scheduledDepartureDate.setDate(scheduledDepartureDate.getDate() -1);
-                             }
-
-                            relevantTrips.push({
-                                departureDateTime: scheduledDepartureDate,
-                                arrivalDateTime: scheduledArrivalDate,
-                                departStr: trip[departureKey],
-                                arriveStr: trip[arrivalKey]
-                            });
-                        }
-                    });
-
-                    // Sort by arrival time, latest first (this also means closest to target time is first)
                     relevantTrips.sort((a, b) => b.arrivalDateTime - a.arrivalDateTime);
-
-                    const lastFiveTrips = relevantTrips.slice(0, 5); // Changed slice from 2 to 5
-
-                    if (lastFiveTrips.length === 0) {
-                        // Destination is always HQ now
-                        resultsContainer.innerHTML = `<p class="text-gray-600 dark:text-gray-400">No buses found arriving at HQ by ${desiredArrivalTimeStr} today.</p>`; 
+                    const results = relevantTrips.slice(0, 5);
+                    
+                    if (results.length === 0) {
+                         searchResultsContainer.innerHTML = `<p class="text-gray-600 dark:text-gray-400">No buses arrive at HQ by ${desiredTime} today.</p>`;
                     } else {
-                        resultsContainer.innerHTML = `<h3 class="text-md uppercase font-semibold text-gray-800 dark:text-gray-200 mb-2">Latest buses arriving at HQ by ${desiredArrivalTimeStr} (up to 5):</h3>`; // Updated title
-                        lastFiveTrips.forEach(trip => {
-                            const travelMinutes = calculateTravelTime(trip.departStr, trip.arriveStr);
-                            const tripElement = document.createElement('div');
-                            tripElement.className = 'bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm text-sm'; 
-                            tripElement.innerHTML = `
+                        searchResultsContainer.innerHTML = `<h3 class="text-md uppercase font-semibold text-gray-800 dark:text-gray-200 mb-2">Latest arriving at HQ by ${desiredTime} (up to 5):</h3>`;
+                        results.forEach(trip => {
+                            const travelMinutes = calculateTravelTime(trip.departPZV2, trip.arriveHQ);
+                            const tripEl = document.createElement('div');
+                            tripEl.className = 'bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm text-sm';
+                            tripEl.innerHTML = `
                                 <div class="flex justify-between items-center mb-1">
-                                    <span class="text-gray-700 dark:text-gray-300">
-                                        <i class="fas fa-clock text-gray-500 dark:text-gray-400 mr-1"></i> Departs PZV2: 
-                                        <strong class="text-gray-900 dark:text-white">${trip.departStr}</strong>
-                                    </span>
-                                    <span class="text-gray-700 dark:text-gray-300">
-                                        <i class="fas fa-flag-checkered text-gray-500 dark:text-gray-400 mr-1"></i> Arrives HQ: 
-                                        <strong class="text-gray-900 dark:text-white">${trip.arriveStr}</strong>
-                                    </span>
+                                    <span class="text-gray-700 dark:text-gray-300"><i class="fas fa-clock text-gray-500 dark:text-gray-400 mr-1"></i> Departs PZV2: <strong class="text-gray-900 dark:text-white">${trip.departPZV2}</strong></span>
+                                    <span class="text-gray-700 dark:text-gray-300"><i class="fas fa-flag-checkered text-gray-500 dark:text-gray-400 mr-1"></i> Arrives HQ: <strong class="text-gray-900 dark:text-white">${trip.arriveHQ}</strong></span>
                                 </div>
-                                <div class="text-xs uppercase text-gray-500 dark:text-gray-400 mt-1">
-                                    <i class="fas fa-hourglass-half mr-1"></i> Travel Time: ${travelMinutes} min
-                                </div>
+                                <div class="text-xs uppercase text-gray-500 dark:text-gray-400 mt-1"><i class="fas fa-hourglass-half mr-1"></i> Travel Time: ${isNaN(travelMinutes) ? 'N/A' : travelMinutes + ' min'}</div>
                             `;
-                            resultsContainer.appendChild(tripElement);
+                            searchResultsContainer.appendChild(tripEl);
                         });
                     }
-                } catch (error) {
-                    console.error("Search error:", error);
-                    resultsContainer.innerHTML = `<p class="text-red-600 dark:text-red-400">Error processing search. Please check the time format.</p>`;
+                } catch (err) {
+                    console.error("Search Error:", err);
+                    searchResultsContainer.innerHTML = `<p class="text-red-600 dark:text-red-400">Error processing search. Check time format.</p>`;
                 }
             });
-        } else {
-            console.error("Search button within overlay not found!");
         }
-
-        // Toggle full schedule (needs scheduleLoaded check)
-        document.getElementById('toggle-schedule-btn').addEventListener('click', function() {
-            console.log('[toggleScheduleBtn Click] scheduleLoaded:', scheduleLoaded); // DEBUG
-            if (!scheduleLoaded) {
-                console.warn("Full schedule toggle clicked, but schedule not loaded.");
-                return; 
-            }
-            
-            // Use a class to track state, simpler than checking maxHeight/opacity
-            const isExpanded = fullScheduleContainer.classList.toggle('expanded'); // Toggle returns true if class added, false if removed
-
-            if (isExpanded) {
-                console.log("Expanding full schedule");
-                // Directly populate the container
-                populateFullSchedule(
-                    document.querySelector('.route-tab.active').dataset.direction === 'pzv2_to_hq' ? pzv2_to_hq : hq_to_pzv2,
-                    fullScheduleContainer, // Pass the container itself
-                    document.querySelector('.route-tab.active').dataset.direction
-                 ); 
-                // ... (rest of expansion logic)
-            } else {
-                console.log("Collapsing full schedule");
-                // Collapse styles
-                fullScheduleContainer.style.maxHeight = '0px';
-                fullScheduleContainer.style.opacity = '0';
-                this.textContent = 'Show Full Schedule';
-            }
-        });
-
-        // Populate Full Schedule function - Simplified (no scheduleList ID needed)
-        function populateFullSchedule(schedule, container, direction) {
-             if (!container) {
-                 console.error("Full schedule container not provided");
-                 return;
-             }
-             container.innerHTML = ''; // Clear existing content
-             if (!schedule || schedule.length === 0) {
-                container.innerHTML = `<div class="text-sm text-gray-500 dark:text-gray-400 p-2">No schedule data available.</div>`;
-                return;
-             }
-             
-             // Create and append entries directly to the container
-             schedule.forEach(entry => {
-                const departTime = direction === 'pzv2_to_hq' ? entry.departPZV2 : entry.departHQ;
-                const arriveTime = direction === 'pzv2_to_hq' ? entry.arriveHQ : entry.arrivePZV2;
-                const travelTime = calculateTravelTime(departTime, arriveTime);
+        
+        if (toggleScheduleButton && fullScheduleContainer && scheduleListContainer) {
+            toggleScheduleButton.addEventListener('click', function() {
+                if (!scheduleLoaded) return;
+                const buttonSpan = this.querySelector('span');
+                const icon = this.querySelector('i');
                 
-                const item = document.createElement('div');
-                item.className = 'text-sm flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded mb-1'; // Added mb-1 for spacing
-                item.innerHTML = `
-                    <span>Depart: <strong>${departTime}</strong></span>
-                    <span>Arrive: <strong>${arriveTime}</strong></span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">(${travelTime} min)</span>
-                `;
-                container.appendChild(item); // Append directly to the container
+                if (fullScheduleContainer.style.maxHeight && fullScheduleContainer.style.maxHeight !== '0px') {
+                    fullScheduleContainer.style.maxHeight = '0px';
+                    fullScheduleContainer.style.opacity = '0';
+                    if(buttonSpan) buttonSpan.textContent = 'Show Full Schedule';
+                    if(icon) icon.classList.replace('fa-calendar-times', 'fa-calendar-alt');
+                } else {
+                    scheduleListContainer.innerHTML = ''; // Clear first
+                    const direction = document.querySelector('.route-tab.active')?.dataset.direction;
+                    const schedule = direction === 'pzv2_to_hq' ? pzv2_to_hq : hq_to_pzv2;
+                    if (schedule && schedule.length > 0) {
+                        schedule.forEach(entry => {
+                            const depart = direction === 'pzv2_to_hq' ? entry.departPZV2 : entry.departHQ;
+                            const arrive = direction === 'pzv2_to_hq' ? entry.arriveHQ : entry.arrivePZV2;
+                            if (!depart || !arrive) return;
+                            const travelMins = calculateTravelTime(depart, arrive);
+                            const item = document.createElement('div');
+                            item.className = 'flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700 last:border-0';
+                            item.innerHTML = `
+                                <span class="uppercase text-xs tracking-wide text-gray-700 dark:text-gray-300"><i class="fas fa-clock mr-1"></i> ${depart} → ${arrive}</span>
+                                <span class="text-xs uppercase text-gray-500 dark:text-gray-400"><i class="fas fa-hourglass-half mr-1"></i> ${isNaN(travelMins) ? 'N/A' : travelMins + ' min'}</span>
+                            `;
+                            scheduleListContainer.appendChild(item);
+                        });
+                    } else {
+                        scheduleListContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm text-center">Schedule not available.</p>';
+                    }
+                    fullScheduleContainer.style.opacity = '1';
+                    fullScheduleContainer.style.maxHeight = fullScheduleContainer.scrollHeight + 'px';
+                    if(buttonSpan) buttonSpan.textContent = 'Hide Full Schedule';
+                    if(icon) icon.classList.replace('fa-calendar-alt', 'fa-calendar-times');
+                    setTimeout(() => fullScheduleContainer.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+                }
             });
         }
-
-        // Direction change handler (User Click)
-        document.querySelectorAll('.route-tab').forEach(tab => {
+        
+        routeTabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const clickedDirection = tab.dataset.direction;
-                 document.querySelectorAll('.route-tab').forEach(t => {
-                     // Remove active classes (generic)
-                     t.classList.remove('active', 
-                                      'bg-primary-50', 'dark:bg-primary-700', 'dark:bg-primary-900', // Remove old dark bg possibilities 
-                                      'text-primary-700', 'dark:text-white', 'dark:text-primary-300'); // Remove old dark text possibilities
-                     // Add default inactive classes
-                     t.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
-                 });
-                 // Remove inactive styles from clicked tab
-                 tab.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300');
-                 // Apply NEW active styles
-                 tab.classList.add('active', 'bg-primary-50', 'dark:bg-primary-700', 'text-primary-700', 'dark:text-white'); 
-
-                // Update display for the manually clicked tab
-                updateDisplay(); 
+                selectRouteTab(clickedDirection);
+                // Collapse full schedule when changing route
+                if (fullScheduleContainer.style.maxHeight && fullScheduleContainer.style.maxHeight !== '0px') {
+                     fullScheduleContainer.style.maxHeight = '0px';
+                     fullScheduleContainer.style.opacity = '0';
+                     const btnSpan = toggleScheduleButton.querySelector('span');
+                     const btnIcon = toggleScheduleButton.querySelector('i');
+                     if(btnSpan) btnSpan.textContent = 'Show Full Schedule';
+                     if(btnIcon) btnIcon.classList.replace('fa-calendar-times', 'fa-calendar-alt');
+                }
             });
         });
 
-        // --- Initialisation ---
+        // --- Initialisation --- 
         async function initializeApp() {
-            // 1. Load schedule
-            await loadSchedule(); 
-            if (!scheduleLoaded) {
-                 console.error("Initialization failed: Schedule could not be loaded.");
-                 return; // Stop initialization if schedule failed
-            }
+            await loadSchedule();
+            if (!scheduleLoaded) return;
 
-            // 2. Try Geolocation to set initial tab
             if (navigator.geolocation) {
-                 console.log("Attempting geolocation...");
-                 navigator.geolocation.getCurrentPosition(
-                     (position) => { // Success
-                         const userLat = position.coords.latitude;
-                         const userLon = position.coords.longitude;
-                         const distPZV2 = calculateDistance(userLat, userLon, pzv2Coords.lat, pzv2Coords.lon);
-                         const distHQ = calculateDistance(userLat, userLon, hqCoords.lat, hqCoords.lon);
-                         
-                         const defaultDirection = (distPZV2 <= distHQ) ? 'pzv2_to_hq' : 'hq_to_pzv2';
-                         console.log(`Geolocation success: User closer to ${defaultDirection === 'pzv2_to_hq' ? 'PZV2' : 'HQ'} (${distPZV2.toFixed(2)}km vs ${distHQ.toFixed(2)}km). Setting default route.`);
-                         selectRouteTab(defaultDirection); // Selects tab and triggers initial updateDisplay
-                         startUpdateInterval(); // Start interval *after* initial setup based on location
-                     },
-                     (error) => { // Error / Denied
-                         console.warn(`Geolocation error (${error.code}): ${error.message}. Defaulting to PZV2 → HQ.`);
-                         selectRouteTab('pzv2_to_hq'); // Default tab (also triggers initial updateDisplay)
-                         startUpdateInterval(); // Start interval *after* default setup
-                     },
-                     {
-                         enableHighAccuracy: false, 
-                         timeout: 10000, 
-                         maximumAge: 60000 
-                     }
-                 );
-             } else { // Geolocation not supported
-                 console.warn("Geolocation is not supported by this browser. Defaulting to PZV2 → HQ.");
-                 selectRouteTab('pzv2_to_hq'); // Default tab (also triggers initial updateDisplay)
-                 startUpdateInterval(); // Start interval *after* default setup
-             }
+                console.log("Attempting geolocation...");
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const userLat = pos.coords.latitude, userLon = pos.coords.longitude;
+                        const distPZV2 = calculateDistance(userLat, userLon, pzv2Coords.lat, pzv2Coords.lon);
+                        const distHQ = calculateDistance(userLat, userLon, hqCoords.lat, hqCoords.lon);
+                        const direction = (distPZV2 <= distHQ) ? 'pzv2_to_hq' : 'hq_to_pzv2';
+                        console.log(`Geolocation success: Closer to ${direction === 'pzv2_to_hq' ? 'PZV2' : 'HQ'}. Setting route.`);
+                        selectRouteTab(direction);
+                        startUpdateInterval();
+                    },
+                    (err) => {
+                        console.warn(`Geolocation error (${err.code}): ${err.message}. Defaulting route.`);
+                        selectRouteTab('pzv2_to_hq'); // Default on error
+                        startUpdateInterval();
+                    },
+                    { timeout: 8000, maximumAge: 300000, enableHighAccuracy: false }
+                );
+            } else {
+                console.warn("Geolocation not supported. Defaulting route.");
+                selectRouteTab('pzv2_to_hq'); // Default if no geolocation
+                startUpdateInterval();
+            }
         }
 
-        initializeApp(); // Start the app initialization
-
-        // Register service worker for PWA
+        initializeApp();
+        
+        // --- PWA Registration --- 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/figglebusapp/sw.js')
-                    .then(registration => {
-                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                    }).catch(err => {
-                        console.log('ServiceWorker registration failed: ', err);
-                    });
+                navigator.serviceWorker.register('sw.js') // Use relative path
+                    .then(reg => console.log('ServiceWorker registered.', reg.scope))
+                    .catch(err => console.error('ServiceWorker registration failed:', err));
             });
-        } else {
-             console.log('Service Worker not supported in this browser.');
         }
-
-        // --- DOM Elements Caching (declare vars here, assign in DOMContentLoaded) ---
-        let authStatusDiv, authorizeButton, fetchEventButton, toggleScheduleBtn, fullScheduleContainer;
-        let eventDetailsDiv, eventSummaryText, eventStartTimeText, targetArrivalTimeText;
-        let searchResultsContainer, searchResultsHeader, searchResultsList;
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log("DOM fully loaded and parsed");
-
-            // Cache ALL DOM Elements Here (ensure these IDs match HTML)
-            authStatusDiv = document.getElementById('auth-status');
-            authorizeButton = document.getElementById('authorize_button');
-            signoutButton = document.getElementById('signout_button');
-            fetchEventButton = document.getElementById('fetch_event_button');
-            toggleScheduleBtn = document.getElementById('toggle-schedule-btn');
-            fullScheduleContainer = document.getElementById('full-schedule-container');
-            eventDetailsDiv = document.getElementById('event-details');
-            eventSummaryText = document.getElementById('event-summary-text');
-            eventStartTimeText = document.getElementById('event-start-time-text');
-            targetArrivalTimeText = document.getElementById('target-arrival-time-text');
-            searchResultsContainer = document.getElementById('search-results-container');
-            searchResultsHeader = document.getElementById('search-results-header');
-            searchResultsList = document.getElementById('search-results-list');
-
-            // ... (Attach listeners for Dark Mode, Search, Direction, Auth Buttons like before) ...
-
-            // Full Schedule Toggle - Listener using simplified populate
-            if(toggleScheduleBtn && fullScheduleContainer) {
-                 toggleScheduleBtn.addEventListener('click', function() {
-                     console.log('[toggleScheduleBtn Click] scheduleLoaded:', scheduleLoaded); // DEBUG
-                     if (!scheduleLoaded) {
-                         console.warn("Full schedule toggle clicked, but schedule not loaded.");
-                         return; 
-                     }
-                     
-                     // Use a class to track state, simpler than checking maxHeight/opacity
-                     const isExpanded = fullScheduleContainer.classList.toggle('expanded'); // Toggle returns true if class added, false if removed
-
-                     if (isExpanded) {
-                         console.log("Expanding full schedule");
-                         // Directly populate the container
-                         populateFullSchedule(
-                            document.querySelector('.route-tab.active').dataset.direction === 'pzv2_to_hq' ? pzv2_to_hq : hq_to_pzv2,
-                            fullScheduleContainer, // Pass the container itself
-                            document.querySelector('.route-tab.active').dataset.direction
-                         ); 
-                         // ... (rest of expansion logic)
-                     } else {
-                         console.log("Collapsing full schedule");
-                         // Collapse styles
-                         fullScheduleContainer.style.maxHeight = '0px';
-                         fullScheduleContainer.style.opacity = '0';
-                         this.textContent = 'Show Full Schedule';
-                     }
-                 });
-             } else { 
-                 console.error("Toggle schedule button or container not found!"); 
-             }
-             
-            // Populate Full Schedule function - Simplified (no scheduleList ID needed)
-            function populateFullSchedule(schedule, container, direction) {
-                 if (!container) {
-                     console.error("Full schedule container not provided");
-                     return;
-                 }
-                 container.innerHTML = ''; // Ensure clearing happens first
-                 if (!schedule || schedule.length === 0) {
-                    container.innerHTML = `<div class="text-sm text-gray-500 dark:text-gray-400 p-2">No schedule data available.</div>`;
-                    return;
-                 }
-                 
-                 // Create and append entries directly to the container
-                 schedule.forEach(entry => {
-                    const departTime = direction === 'pzv2_to_hq' ? entry.departPZV2 : entry.departHQ;
-                    const arriveTime = direction === 'pzv2_to_hq' ? entry.arriveHQ : entry.arrivePZV2;
-                    const travelTime = calculateTravelTime(departTime, arriveTime);
-                    
-                    const item = document.createElement('div');
-                    item.className = 'text-sm flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded mb-1'; // Added mb-1 for spacing
-                    item.innerHTML = `
-                        <span>Depart: <strong>${departTime}</strong></span>
-                        <span>Arrive: <strong>${arriveTime}</strong></span>
-                        <span class="text-xs text-gray-500 dark:text-gray-400">(${travelTime} min)</span>
-                    `;
-                    container.appendChild(item); // Append directly to the container
-                });
-            }
-
-            // --- Initial Setup (after DOM loaded and listeners attached) ---
-            console.log("Running initial setup within DOMContentLoaded");
-            
-            // Load schedule
-            await loadSchedule(); 
-            console.log("Schedule loading attempted.");
-
-            // Start update interval ONLY if schedule loaded successfully
-            if (scheduleLoaded) {
-                 console.log("Schedule loaded, starting update interval.");
-                 updateDisplay(); // Initial display update
-                 setInterval(updateDisplay, 1000); 
-            } else {
-                console.log("Schedule not loaded, display interval not started.");
-            }
-
-            // Explicitly call maybeEnableButtons after DOM is ready and elements are cached
-            console.log("Calling maybeEnableButtons after DOMContentLoaded setup."); // DEBUG
-            maybeEnableButtons(); 
-            
-            console.log("Initial setup complete."); // DEBUG
-        });
-
-        // --- Google API/GIS Functions ---
-        function gapiLoaded() {
-            console.log("gapiLoaded called"); // DEBUG
-            gapi.load('client', initializeGapiClient);
-        }
-
-        function initializeGapiClient() {
-            console.log("initializeGapiClient called"); // DEBUG
-            gapi.client.init({
-                apiKey: API_KEY,
-                discoveryDocs: DISCOVERY_DOCS
-            })
-                .then(() => { 
-                    // Removed separate load - discovery docs are loaded during init with apiKey
-                    gapiInited = true;
-                    console.log("GAPI client initialized."); // Updated log
-                    if (document.readyState === 'complete') {
-                        console.log("GAPI ready, DOM complete, calling maybeEnableButtons"); // DEBUG
-                        maybeEnableButtons(); 
-                    }
-                }).catch(error => {
-                     console.error('Error initializing GAPI client:', error);
-                     if(authStatusDiv) authStatusDiv.textContent = 'Error loading Google API (GAPI).'; 
-                });
-        }
-
-        function gisLoaded() {
-            console.log("gisLoaded called"); // DEBUG
-            initializeGisClient();
-        }
-
-        function initializeGisClient() {
-             console.log("initializeGisClient called"); // DEBUG
-             try {
-                 google.accounts.id.initialize({
-                     client_id: CLIENT_ID,
-                     callback: handleCredentialResponse, 
-                     auto_select: true
-                 });
-                 tokenClient = google.accounts.oauth2.initTokenClient({
-                     client_id: CLIENT_ID,
-                     scope: CALENDAR_SCOPE,
-                     callback: handleTokenResponse,
-                 });
-                 gisInited = true;
-                 console.log("GIS client initialized."); // DEBUG
-                 if (document.readyState === 'complete') {
-                     console.log("GIS ready, DOM complete, calling maybeEnableButtons"); // DEBUG
-                     maybeEnableButtons(); 
-                 }
-                 
-                 google.accounts.id.prompt(/* ... */); // Keep prompt logic
-
-             } catch (error) {
-                 console.error('Error initializing GIS client:', error);
-                 if(authStatusDiv) authStatusDiv.textContent = 'Error loading Google API (GIS).';
-             }
-        }
-
-        function handleCredentialResponse(response) {
-            console.log("GIS ID Credential Response (Sign-In confirmed):");
-            userIsSignedIn = true;
-            // Update status ONLY if DOM element exists
-            if(authStatusDiv) authStatusDiv.textContent = 'Signed in. Ready to Authorize API.'; 
-            if (document.readyState === 'complete') {
-                maybeEnableButtons(); 
-            } // Otherwise wait for DOMContentLoaded
-        }
-
-        function handleTokenResponse(resp) {
-            console.log("handleTokenResponse CALLED."); // DEBUG: Check if this is ever reached
-            if (resp.error !== undefined) {
-                console.error('Google Auth Error (Token Response):', resp);
-                // Update status/buttons ONLY if DOM elements exist
-                if(authStatusDiv) authStatusDiv.textContent = 'Authorization failed.';
-                if(fetchEventButton) fetchEventButton.disabled = true; 
-                if(authorizeButton) {
-                    authorizeButton.disabled = false;
-                    authorizeButton.textContent = 'Sign In & Authorize Calendar';
-                }
-                // throw (resp); // Maybe don't throw to avoid breaking other things?
-                return; // Exit function on error
-            }
-            userIsSignedIn = true; 
-            console.log('GAPI client access token obtained.');
-            // Update status/buttons ONLY if DOM elements exist
-            if(authStatusDiv) authStatusDiv.textContent = 'Calendar Authorized!';
-            if(authorizeButton) {
-                authorizeButton.textContent = 'Calendar Authorized';
-                authorizeButton.disabled = true;
-            }
-            if(fetchEventButton) fetchEventButton.disabled = false;
-        }
-
-        function maybeEnableButtons() {
-            console.log('[maybeEnableButtons] CALLED. gapiInited:', gapiInited, 'gisInited:', gisInited, 'authorizeButton exists:', !!authorizeButton); // DEBUG
-            // Check if DOM is ready AND elements exist before trying to enable
-             if (!authorizeButton || !authStatusDiv || !fetchEventButton) {
-                 console.log("maybeEnableButtons called before DOM elements cached. Skipping.");
-                 return; // Exit if elements aren't cached yet
-             }
-             
-             console.log(`maybeEnableButtons: gapi=${gapiInited}, gis=${gisInited}, fetchBtnDisabled=${fetchEventButton.disabled}`);
-
-             if (gapiInited && gisInited && !fetchEventButton.disabled) {
-                 // Already authorized (fetch button enabled), do nothing more to auth button
-             } else if (gapiInited && gisInited) {
-                 // APIs ready, enable auth button if not already authorized
-                 authorizeButton.disabled = false;
-                 // Update status ONLY if it's still the default loading message
-                 if (authStatusDiv.textContent === 'Loading Google API...') {
-                    authStatusDiv.textContent = 'Ready to sign in.';
-                 }
-             } else {
-                 // APIs not ready, ensure buttons reflect this
-                 authorizeButton.disabled = true;
-                 fetchEventButton.disabled = true;
-                 // Keep the loading message or any error message already displayed
-             }
-        }
-
-        function handleAuthClick() {
-            console.log("handleAuthClick CALLED."); // DEBUG
-            if (!gisInited) {
-                console.error("GIS not initialized in handleAuthClick");
-                return;
-            }
-            
-            try {
-                if (gapi.client.getToken() === null) {
-                    if (userIsSignedIn) {
-                         console.log("Requesting access token SILENTLY (prompt: '')"); // DEBUG
-                         tokenClient.requestAccessToken({prompt: ''}); 
-                    } else {
-                         console.log("Requesting access token with CONSENT prompt"); // DEBUG
-                         tokenClient.requestAccessToken({prompt: 'consent'});
-                    }
-                } else {
-                     console.log("Token exists, requesting access token SILENTLY (refresh, prompt: '')"); // DEBUG
-                     tokenClient.requestAccessToken({prompt: ''}); 
-                }
-             } catch (error) {
-                 console.error("Error occurred INSIDE handleAuthClick when calling requestAccessToken:", error); // DEBUG
-                 if(authStatusDiv) authStatusDiv.textContent = 'Error requesting token.';
-             }
-        }
-
-        // ... handleSignoutClick, fetchNextCalendarEvent ...
 
     </script>
-    <!-- Add onload callbacks for GAPI/GIS -->
-    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
 </body>
 </html>
