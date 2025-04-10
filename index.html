@@ -59,6 +59,7 @@
         let tokenClient; // For handling authorization tokens
         let gapiInited = false;
         let gisInited = false;
+        let userIsSignedIn = false; // Track sign-in state via GIS ID
 
         // --- Existing Config/Vars (Keep these lines commented or remove them) ---
         /* 
@@ -324,6 +325,24 @@
             }
             
             return totalMinutes;
+        }
+
+        // New function to format a Date object as HH:MM in Dubai time
+        function formatAsDubaiHHMM(date) {
+          try {
+            return date.toLocaleTimeString('en-GB', { // Use en-GB for HH:MM
+              timeZone: 'Asia/Dubai', // Explicitly use Dubai timezone
+              hour: '2-digit',
+              minute: '2-digit',
+              hourCycle: 'h23' // Ensure 24-hour format
+            });
+          } catch (e) {
+             console.error("Error formatting time for Dubai timezone:", e);
+             // Fallback to browser's local time formatting if timezone API fails
+             const hours = date.getHours().toString().padStart(2, '0');
+             const minutes = date.getMinutes().toString().padStart(2, '0');
+             return `${hours}:${minutes}`;
+          }
         }
 
         // --- Haversine Distance Calculation ---
@@ -880,50 +899,103 @@
         }
 
         function gisLoaded() {
+            // Initialize the GIS ID client for sign-in state
+            google.accounts.id.initialize({
+                client_id: CLIENT_ID,
+                callback: handleCredentialResponse, // Function to handle the Sign In response
+                auto_select: true // Attempt to sign in automatically on load
+                // use_fedcm_for_prompt: true // Optional: Use newer FedCM standard if browser supports
+            });
+
+            // Initialize the GIS Token client for getting API access tokens
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
                 scope: CALENDAR_SCOPE,
-                callback: '', // Defined dynamically
+                callback: handleTokenResponse, // Central handler for token responses
             });
             gisInited = true;
             maybeEnableButtons();
+            
+            // Attempt automatic sign-in or show One Tap prompt
+            // This helps maintain session across reloads if user is logged into Google
+             google.accounts.id.prompt((notification) => {
+                 if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                     // Prompt wasn't shown or was skipped, user might need to click Sign In
+                     console.log('GIS ID prompt notification:', notification.getNotDisplayedReason() || notification.getSkippedReason());
+                     // Enable button if not already signed in
+                     if (!userIsSignedIn) maybeEnableButtons(); 
+                 }
+             });
         }
 
         function maybeEnableButtons() {
-            if (gapiInited && gisInited) {
-                authorizeButton.disabled = false;
-                 authStatusDiv.textContent = 'Ready to sign in.';
+             // Enable Auth button only when libraries are ready AND user isn't fully authorized yet
+            if (gapiInited && gisInited && !fetchEventButton.disabled) {
+                 // Already authorized, do nothing to auth button
+             } else if (gapiInited && gisInited) {
+                 authorizeButton.disabled = false;
+                 authStatusDiv.textContent = authStatusDiv.textContent || 'Ready to sign in.'; // Keep existing status if any
+             }
+             // Fetch button remains disabled until token response is successful
+        }
+
+        // --- Handle GIS ID Sign In Response --- 
+        function handleCredentialResponse(response) {
+            // This callback confirms the user is signed in with Google
+            // It provides an ID token (JWT), not an access token for APIs
+            console.log("GIS ID Credential Response (Sign-In confirmed):"); //, response.credential);
+            // You could decode response.credential JWT to get user info if needed
+            userIsSignedIn = true;
+            authStatusDiv.textContent = 'Signed in. Ready to Authorize API.';
+            // Enable authorize button if needed, or attempt token request silently
+            maybeEnableButtons(); 
+            handleAuthClick(); // Try to get token immediately after sign-in confirmation
+        }
+
+        // --- Central Token Response Handler --- 
+        function handleTokenResponse(resp) {
+             if (resp.error !== undefined) {
+                console.error('Google Auth Error (Token Response):', resp);
+                authStatusDiv.textContent = 'Authorization failed.';
+                 fetchEventButton.disabled = true; // Ensure fetch is disabled
+                 authorizeButton.disabled = false; // Re-enable auth button
+                 authorizeButton.textContent = 'Sign In & Authorize Calendar';
+                throw (resp);
             }
+            // Access Token granted successfully
+            userIsSignedIn = true; // Mark as signed in if token obtained
+            authStatusDiv.textContent = 'Calendar Authorized!';
+            authorizeButton.textContent = 'Calendar Authorized';
+            authorizeButton.disabled = true;
+            fetchEventButton.disabled = false;
+            console.log('GAPI client access token obtained.');
         }
 
         // --- Authorization Logic --- 
         authorizeButton.addEventListener('click', handleAuthClick);
 
         function handleAuthClick() {
-            tokenClient.callback = async (resp) => {
-                if (resp.error !== undefined) {
-                    console.error('Google Auth Error:', resp);
-                    authStatusDiv.textContent = 'Authorization failed.';
-                    throw (resp);
-                }
-                // Auth successful
-                authStatusDiv.textContent = 'Calendar Authorized!';
-                authorizeButton.textContent = 'Calendar Authorized';
-                authorizeButton.disabled = true;
-                fetchEventButton.disabled = false;
-                // No need to explicitly set token, gapi handles it after this callback
-                console.log('GAPI client token set?', gapi.client.getToken()); 
-            };
-
-            // Check if we already have a token (might not work across reloads without more logic)
+            if (!gisInited) {
+                console.error("GIS not initialized");
+                return;
+            }
+            
             if (gapi.client.getToken() === null) {
-                // Prompt the user to select a Google Account and ask for consent to share their data
-                // when establishing a new session.
-                authStatusDiv.textContent = 'Requesting authorization...';
-                tokenClient.requestAccessToken({prompt: 'consent'});
+                 // No token yet. If user is already signed-in (via google.accounts.id), 
+                 // try a silent token request first. Otherwise, trigger consent.
+                 if (userIsSignedIn) {
+                      // Try to get token without user interaction
+                      authStatusDiv.textContent = 'Requesting access token...';
+                      tokenClient.requestAccessToken({prompt: ''}); 
+                 } else {
+                     // Prompt the user to select account and grant consent
+                     authStatusDiv.textContent = 'Requesting authorization...';
+                     tokenClient.requestAccessToken({prompt: 'consent'});
+                 }
             } else {
-                 // Skip display of account chooser and consent dialog for an existing session.
-                 authStatusDiv.textContent = 'Requesting access token...';
+                // We think we have a token, maybe try using it? 
+                // Or just re-request silently to be sure it's fresh.
+                 authStatusDiv.textContent = 'Refreshing access token...';
                  tokenClient.requestAccessToken({prompt: ''}); 
             }
         }
@@ -962,51 +1034,44 @@
                 console.log(`Next event: ${nextEvent.summary} at ${when}`);
                 authStatusDiv.textContent = `Next: ${nextEvent.summary.substring(0,20)}...`;
 
-                // Extract time and trigger search (Needs timezone handling!)
-                let eventTime = null;
-                if (nextEvent.start.dateTime) { 
-                    // This is a specific time. CAUTION: Timezone needs careful handling.
-                    // Google API returns ISO 8601 format like "2023-10-27T10:00:00+04:00"
-                    // We need to convert this to Dubai HH:MM for the search input.
+                // --- Calculate Target Arrival Time & Trigger Search --- 
+                let targetArrivalTimeStr = null;
+                if (nextEvent.start.dateTime) { // Only proceed if it's not an all-day event
                     try {
-                         const eventDate = new Date(when); 
-                         // Format this date *as if it were in Dubai time* for our HH:MM output.
-                         // This is tricky. A robust library like date-fns-tz is better.
-                         // Simple approach: Assume event time IS Dubai time (often wrong!)
-                         // Or try to adjust based on offset if present (also complex).
+                         const eventDate = new Date(when); // Parse event start time
                          
-                         // Quick and dirty: just extract HH:MM from ISO string if possible
-                         const timeMatch = when.match(/T(\d{2}:\d{2})/);
-                         if (timeMatch && timeMatch[1]) {
-                             eventTime = timeMatch[1];
-                         } else { 
-                              // Fallback: Format the Date object using *local* browser TZ, may not be Dubai.
-                              eventTime = eventDate.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', hourCycle: 'h23'});
-                         }
+                         // Calculate target arrival time (150 mins before event)
+                         const targetArrivalDateTime = new Date(eventDate.getTime() - (150 * 60 * 1000));
+                         
+                         // Format the target time as HH:MM in Dubai timezone
+                         targetArrivalTimeStr = formatAsDubaiHHMM(targetArrivalDateTime);
+                         
+                         console.log(`Event starts at ${when}, calculating arrival by ${targetArrivalTimeStr} (Dubai time)`);
+                         authStatusDiv.textContent += ` (Need to arrive by ~${targetArrivalTimeStr})`;
+
                     } catch (e) {
-                         console.error("Error parsing event date/time:", e);
-                         authStatusDiv.textContent = 'Error parsing event time.';
+                         console.error("Error calculating or formatting target arrival time:", e);
+                         authStatusDiv.textContent = 'Error processing event time.';
                          return;
                     }
                 } else if (nextEvent.start.date) {
-                    // All-day event. What time to use? Maybe 00:00 or skip?
+                    // All-day event logic unchanged
                     console.log("Next event is an all-day event. Skipping search.");
                     authStatusDiv.textContent += ' (All-day event)';
                     return;
                 }
 
-                if (eventTime) {
-                    // Populate search and click
+                if (targetArrivalTimeStr) {
+                    // Populate search and click (logic unchanged)
                     const searchInput = document.getElementById('arrival-time-search');
-                    const searchButton = document.getElementById('search-button'); // Button inside overlay
+                    const searchButton = document.getElementById('search-button');
                     const overlay = document.getElementById('search-overlay');
 
                     if (searchInput && searchButton && overlay) {
-                        searchInput.value = eventTime; 
-                        overlay.classList.remove('hidden'); // Show the overlay
-                        searchButton.click(); // Trigger the search
-                        // Optionally scroll to results after a short delay
-                         setTimeout(() => {
+                        searchInput.value = targetArrivalTimeStr; 
+                        overlay.classList.remove('hidden');
+                        searchButton.click(); 
+                        setTimeout(() => {
                               const resultsDiv = document.getElementById('search-results');
                               if (resultsDiv) resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest'});
                          }, 300);
@@ -1014,6 +1079,7 @@
                          console.error("Search input, button, or overlay not found for calendar event trigger.");
                     }
                 }
+                 // --- End Target Arrival Time Logic ---
 
             } catch (error) {
                 console.error('Error fetching calendar events:', error);
